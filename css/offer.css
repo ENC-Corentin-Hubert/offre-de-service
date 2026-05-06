@@ -1,0 +1,518 @@
+/* ==========================================================================
+   Offer page — slider, floating back button, generate PDF button
+   Used by: offer.html only
+   ========================================================================== */
+
+/* ── Fee slider ────────────────────────────────────────────────────────────── */
+.slider-wrapper {
+  margin-top: 1rem;
+}
+
+.fee-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    var(--accent) 0%,
+    var(--accent) var(--slider-pct, 50%),
+    rgba(31, 111, 120, 0.22) var(--slider-pct, 50%),
+    rgba(31, 111, 120, 0.22) 100%
+  );
+  cursor: pointer;
+  margin-bottom: 1rem;
+  outline: none;
+  border: none;
+}
+
+.fee-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-strong);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(18, 84, 90, 0.4);
+  cursor: grab;
+  transition: background 150ms ease, box-shadow 150ms ease;
+}
+
+.fee-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  background: var(--accent);
+  box-shadow: 0 2px 12px rgba(18, 84, 90, 0.55);
+}
+
+.fee-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-strong);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(18, 84, 90, 0.4);
+  cursor: grab;
+}
+
+.fee-slider:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+
+.slider-bounds {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+
+.slider-value-display {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+  font-size: 1rem;
+}
+
+.slider-value-display strong {
+  font-size: 1.6rem;
+  color: var(--accent-strong);
+  font-family: "DM Serif Display", Georgia, serif;
+}
+
+.final-values {
+  margin-top: 1rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(20, 20, 20, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: var(--shadow);
+}
+
+.final-values p {
+  margin: 0.2rem 0;
+}
+
+.offer-info-section {
+  margin-top: 1.25rem;
+}
+
+.offer-info-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.offer-info-grid label {
+  margin-top: 0.4rem;
+  font-weight: 600;
+  color: var(--accent-strong);
+}
+
+.offer-info-grid input,
+.offer-info-grid textarea {
+  border: 1px solid rgba(20, 20, 20, 0.2);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #fff;
+}
+
+.offer-info-grid textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+#final-total-output {
+  font-size: 1.2rem;
+  color: var(--accent-strong);
+}
+
+.premium-section {
+  margin-top: 1rem;
+}
+
+.premium-section h3 {
+  margin: 0 0 0.35rem;
+  color: var(--accent-strong);
+}
+
+#premium-adjustments {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.adjust-card {
+  border: 1px solid rgba(20, 20, 20, 0.14);
+  border-radius: 12px;
+  padding: 0.8rem 0.9rem;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.adjust-card h4 {
+  margin: 0 0 0.45rem;
+  color: var(--accent-strong);
+  font-size: 1rem;
+}
+
+.adjust-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.35rem;
+}
+
+.adjust-question {
+  margin: 0 0 0.55rem;
+  font-weight: 600;
+}
+
+.yesno-row {
+  display: flex;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.55rem;
+}
+
+.yesno-row[hidden] {
+  display: none;
+}
+
+.yesno-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.adjust-fields {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.adjust-fields[hidden] {
+  display: none;
+}
+
+.conditional-fields[hidden] {
+  display: none;
+}
+
+.adjust-fields label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.adjust-fields label[hidden] {
+  display: none;
+}
+
+.adjust-fields input[type="number"],
+.adjust-fields textarea {
+  border: 1px solid rgba(20, 20, 20, 0.2);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #fff;
+}
+
+.adjust-fields textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+
+.details-wrap[hidden] {
+  display: none;
+}
+
+.comp-card {
+  border: 1px solid rgba(20, 20, 20, 0.14);
+  border-radius: 12px;
+  padding: 0.8rem 0.9rem;
+  background: rgba(255, 255, 255, 0.62);
+  margin-top: 0.75rem;
+}
+
+.comp-card-title {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 0.35rem;
+}
+
+.resources-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-resource-add,
+.btn-resource-remove {
+  border: 1px solid rgba(20, 20, 20, 0.2);
+  border-radius: 999px;
+  background: rgba(31, 111, 120, 0.08);
+  color: var(--accent-strong);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.36rem 0.72rem;
+  cursor: pointer;
+}
+
+.btn-resource-add:hover,
+.btn-resource-remove:hover {
+  background: rgba(31, 111, 120, 0.16);
+}
+
+.resources-items {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.resource-item {
+  border: 1px solid rgba(20, 20, 20, 0.12);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.resource-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.45rem;
+  gap: 0.55rem;
+}
+
+.comp-subsection {
+  margin-top: 0.8rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed rgba(20, 20, 20, 0.2);
+}
+
+.comp-subsection h4,
+.mini-title {
+  margin: 0 0 0.35rem;
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.stacked-checkboxes {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.transport-option {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.stacked-checkboxes label {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.transport-fields {
+  margin-left: 1.6rem;
+  padding: 0.75rem 0.9rem;
+  border-left: 2px solid rgba(31, 111, 120, 0.18);
+  background: rgba(31, 111, 120, 0.04);
+  border-radius: 0 10px 10px 0;
+}
+
+.meals-grid {
+  margin-top: 0.6rem;
+}
+
+.meals-table td input {
+  width: 100%;
+}
+
+.meal-grand-total,
+.comp-total-line {
+  margin-top: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-strong);
+}
+
+/* ── Floating back button ──────────────────────────────────────────────────── */
+.back-btn {
+  position: fixed;
+  left: 1.5rem;
+  bottom: 2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.75rem 1.1rem;
+  background: var(--accent-strong);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(18, 84, 90, 0.45);
+  transition: background 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  z-index: 100;
+}
+
+.back-btn:hover {
+  background: var(--accent);
+  box-shadow: 0 6px 20px rgba(18, 84, 90, 0.55);
+  transform: translateY(-2px);
+}
+
+.back-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.back-btn-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* ── Generate PDF button area ──────────────────────────────────────────────── */
+.offer-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+/* ── Breakdown Table ──────────────────────────────────────────────────────────── */
+.breakdown-section {
+  margin-top: 1.5rem;
+}
+
+.breakdown-section h2 {
+  margin-bottom: 1rem;
+}
+
+.breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid rgba(20, 20, 20, 0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.breakdown-table thead {
+  background: rgba(31, 111, 120, 0.08);
+  border-bottom: 2px solid rgba(31, 111, 120, 0.25);
+}
+
+.breakdown-table th {
+  padding: 0.85rem 0.9rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--accent-strong);
+  font-size: 0.95rem;
+}
+
+.breakdown-table tbody tr {
+  border-bottom: 1px solid rgba(20, 20, 20, 0.08);
+}
+
+.breakdown-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.breakdown-table td {
+  padding: 0.85rem 0.9rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.breakdown-table tr.breakdown-subtotal {
+  background: rgba(31, 111, 120, 0.04);
+  font-weight: 600;
+  border-top: 2px solid rgba(31, 111, 120, 0.2);
+}
+
+.breakdown-table tr.breakdown-subtotal td {
+  padding: 0.95rem 0.9rem;
+  color: var(--accent-strong);
+}
+
+.breakdown-table tr.breakdown-total {
+  background: rgba(31, 111, 120, 0.12);
+  font-weight: 700;
+  border-top: 2px solid var(--accent);
+}
+
+.breakdown-table tr.breakdown-total td {
+  padding: 1rem 0.9rem;
+  color: var(--accent-strong);
+  font-size: 1rem;
+}
+
+.breakdown-table tr.breakdown-extras-premiums {
+  background: rgba(100, 160, 80, 0.06);
+  font-weight: 500;
+  border-top: 1px solid rgba(100, 160, 80, 0.2);
+}
+
+.breakdown-table tr.breakdown-extras-premiums td {
+  padding: 0.8rem 0.9rem;
+  color: #4a7c3f;
+}
+
+.breakdown-table tr.breakdown-extras-compensations {
+  background: rgba(180, 110, 40, 0.06);
+  font-weight: 500;
+  border-top: 1px solid rgba(180, 110, 40, 0.15);
+}
+
+.breakdown-table tr.breakdown-extras-compensations td {
+  padding: 0.8rem 0.9rem;
+  color: #a0621a;
+}
+
+.breakdown-table tr#breakdown-row-adjustments {
+  background: rgba(31, 111, 120, 0.02);
+  font-weight: 500;
+}
+
+.breakdown-table tr#breakdown-row-adjustments td {
+  padding: 0.8rem 0.9rem;
+  color: var(--text-secondary);
+}
+
+.breakdown-table #breakdown-col-item {
+  text-align: left;
+}
+
+.breakdown-table #breakdown-col-quantity,
+.breakdown-table #breakdown-col-rate,
+.breakdown-table #breakdown-col-subtotal {
+  text-align: right;
+  width: 25%;
+}
+
+.breakdown-table td:nth-child(2),
+.breakdown-table td:nth-child(3),
+.breakdown-table td:nth-child(4) {
+  text-align: right;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .back-btn {
+    left: 1rem;
+    bottom: 1.5rem;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.82rem;
+  }
+
+  .slider-value-display strong {
+    font-size: 1.3rem;
+  }
+}

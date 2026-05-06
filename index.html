@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculateur HUPR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/shared.css" />
+    <link rel="stylesheet" href="css/offer.css" />
+  </head>
+  <body>
+    <div class="page-bg" aria-hidden="true"></div>
+
+    <main class="container">
+      <div class="language-switcher" id="language-switcher" role="group" aria-label="Choix de langue">
+        <button type="button" id="lang-fr" class="lang-btn active">FR</button>
+        <button type="button" id="lang-en" class="lang-btn">EN</button>
+      </div>
+
+      <!-- ── Header ─────────────────────────────────────────────────────────── -->
+      <header class="hero">
+        <div class="hero-brand" style="justify-content: center;">
+          <img
+            class="brand-hupr"
+            src="static/HUPR_Logo_Anime_Noir.gif"
+            alt="HUPR"
+          />
+        </div>
+        <h1 id="offer-title">Mon offre de service</h1>
+      </header>
+
+      <!-- ── Service information ───────────────────────────────────────────── -->
+      <section class="results offer-info-section" id="offer-info-section">
+        <h2 id="offer-info-title">Informations de l'offre de service</h2>
+        <div class="offer-info-grid">
+          <label for="offer-recipient" id="offer-recipient-label">Nom du destinataire</label>
+          <input
+            type="text"
+            id="offer-recipient"
+            name="offer-recipient"
+            autocomplete="organization"
+            placeholder="Ex. Direction artistique / Organisme"
+          />
+
+          <label for="offer-event" id="offer-event-label">Nom de l'événement</label>
+          <input
+            type="text"
+            id="offer-event"
+            name="offer-event"
+            autocomplete="off"
+            placeholder="Ex. Festival Exemple"
+          />
+
+          <label for="offer-provider" id="offer-provider-label">Nom de la personne qui fait l'offre</label>
+          <input
+            type="text"
+            id="offer-provider"
+            name="offer-provider"
+            autocomplete="name"
+            placeholder="Ex. Prénom Nom"
+          />
+
+          <label for="offer-description" id="offer-description-label">Brève description de la prestation</label>
+          <textarea
+            id="offer-description"
+            name="offer-description"
+            rows="4"
+            placeholder="Décrivez brièvement ce que fera l'artiste pour cet événement."
+          ></textarea>
+        </div>
+      </section>
+
+      <!-- ── Compensations section ───────────────────────────────────────────── -->
+      <section class="results" id="compensation-section">
+        <h2 id="comp-title">Compensations et frais</h2>
+        <p class="muted" id="comp-hint">
+          Ajoutez ici les frais complémentaires (déplacements, logement, repas et autres coûts) qui s'ajoutent à votre offre.
+        </p>
+
+        <!-- comp-card: resources -->
+        <div class="comp-card">
+          <h3 id="comp-resources-title" class="comp-card-title">
+            <span id="comp-resources-title-text">Ressources humaines et matérielles</span>
+            <button type="button" class="help" id="comp-resources-help-btn" data-help="help-comp-resources" aria-label="Aide ressources humaines et matérielles">?</button>
+          </h3>
+          <div class="help-bubble" id="help-comp-resources" role="tooltip">
+            Avez-vous besoin d'une personne pour installer votre équipement ou d'un outil particulier ? Même si une personne peut vous aider, ou si un simple tournevis fait l'affaire, précisez-le ici pour que votre client puisse prévoir.
+          </div>
+          <p id="comp-resources-question">Avez-vous des besoins en ressources, équipements, costumes ou technique dont vous ne disposez pas ?</p>
+          <p class="muted" id="comp-resources-transport-note">Si vous devez transporter votre matériel, référez-vous à la section Déplacements et lieux.</p>
+          <div class="yesno-row">
+            <label><input type="radio" name="comp-resources-applies" value="yes" /> <span id="comp-resources-yes-label">Oui</span></label>
+            <label><input type="radio" name="comp-resources-applies" value="no" checked /> <span id="comp-resources-no-label">Non</span></label>
+          </div>
+          <div id="comp-resources-fields" class="adjust-fields conditional-fields" hidden>
+            <div class="resources-actions">
+              <button type="button" class="btn-resource-add" id="comp-resources-add-material-btn">Ajouter une ressource matérielle</button>
+              <button type="button" class="btn-resource-add" id="comp-resources-add-human-btn">Ajouter une ressource humaine</button>
+            </div>
+            <div id="comp-resources-items" class="resources-items"></div>
+          </div>
+        </div>
+
+        <!-- comp-card: admin -->
+        <div class="comp-card">
+          <h3 id="comp-admin-title" class="comp-card-title">
+            <span id="comp-admin-title-text">Coûts administratifs et charges</span>
+            <button type="button" class="help" id="comp-admin-help-btn" data-help="help-comp-admin" aria-label="Aide coûts administratifs">?</button>
+          </h3>
+          <div class="help-bubble" id="help-comp-admin" role="tooltip">
+            Avez-vous inclus le temps de gestion, d'administration, de logistique et de promotion ? Avez-vous des frais liés aux adhésions (UDA, ACT, CNESST, etc.) ou pour des assurances ?
+          </div>
+          <p id="comp-admin-question">Avez-vous des coûts administratifs ou de gestion à compenser?</p>
+          <div class="yesno-row">
+            <label><input type="radio" name="comp-admin-applies" value="yes" /> <span id="comp-admin-yes-label">Oui</span></label>
+            <label><input type="radio" name="comp-admin-applies" value="no" checked /> <span id="comp-admin-no-label">Non</span></label>
+          </div>
+          <div id="comp-admin-fields" class="adjust-fields conditional-fields" hidden>
+            <label>
+              <span id="comp-admin-details-label">Description</span>
+              <textarea id="comp-admin-details"></textarea>
+            </label>
+            <label>
+              <span id="comp-admin-amount-label">Montant à facturer</span>
+              <input type="number" id="comp-admin-amount" min="0" step="1" value="0" />
+            </label>
+          </div>
+        </div>
+
+        <!-- comp-card: travel -->
+        <div class="comp-card">
+          <h3 id="comp-travel-title">Déplacements et lieux</h3>
+
+          <!-- transport -->
+          <div class="comp-subsection">
+            <h4 id="transport-title">Transport</h4>
+            <p id="transport-question">Quels modes de transport allez-vous utiliser pour vous rendre à l'événement ?</p>
+            <div class="stacked-checkboxes">
+
+              <!-- transport-long -->
+              <div class="transport-option">
+                <label><input type="checkbox" id="transport-long-enabled" /> <span id="transport-long-label">Transport en commun long (avion/train/bus long)</span></label>
+                <div id="transport-long-fields" class="adjust-fields conditional-fields transport-fields" hidden>
+                  <p class="mini-title" id="transport-long-subtitle">Trajet long</p>
+                  <label id="transport-long-details-wrap">
+                    <span id="transport-long-details-label">Description</span>
+                    <textarea id="transport-long-details" placeholder="Ex.: 2 allers-retours Montreal-Quebec en train"></textarea>
+                  </label>
+                  <div class="yesno-row">
+                    <span id="transport-long-client-question">Est-ce que le client s'en charge ?</span>
+                    <label><input type="radio" name="transport-long-client" value="yes" /> <span id="transport-long-client-yes-label">Oui</span></label>
+                    <label><input type="radio" name="transport-long-client" value="no" checked /> <span id="transport-long-client-no-label">Non</span></label>
+                  </div>
+                  <div id="transport-long-reimb-wrap" class="yesno-row">
+                    <span id="transport-long-reimb-question">Est-ce qu'il rembourse par facture ?</span>
+                    <label><input type="radio" name="transport-long-reimb" value="yes" /> <span id="transport-long-reimb-yes-label">Oui</span></label>
+                    <label><input type="radio" name="transport-long-reimb" value="no" checked /> <span id="transport-long-reimb-no-label">Non</span></label>
+                  </div>
+                  <label id="transport-long-amount-wrap">
+                    <span id="transport-long-amount-label">Combien voulez-vous facturer pour le prendre en charge ?</span>
+                    <input type="number" id="transport-long-amount" min="0" step="1" value="0" />
+                  </label>
+                </div>
+              </div>
+
+              <!-- transport-short -->
+              <div class="transport-option">
+                <label><input type="checkbox" id="transport-short-enabled" /> <span id="transport-short-label">Transport en commun court (métro/bus ville)</span></label>
+                <div id="transport-short-fields" class="adjust-fields conditional-fields transport-fields" hidden>
+                  <p class="mini-title" id="transport-short-subtitle">Transport en commun court</p>
+                  <label id="transport-short-details-wrap">
+                    <span id="transport-short-details-label">Description</span>
+                    <textarea id="transport-short-details" placeholder="Ex.: 6 trajets de metro entre la gare et le lieu de diffusion"></textarea>
+                  </label>
+                  <div class="yesno-row">
+                    <span id="transport-short-reimb-question">Est-ce qu'il rembourse par facture ?</span>
+                    <label><input type="radio" name="transport-short-reimb" value="yes" /> <span id="transport-short-reimb-yes-label">Oui</span></label>
+                    <label><input type="radio" name="transport-short-reimb" value="no" checked /> <span id="transport-short-reimb-no-label">Non</span></label>
+                  </div>
+                  <label id="transport-short-amount-wrap">
+                    <span id="transport-short-amount-label">Combien voulez-vous facturer pour le prendre en charge ?</span>
+                    <input type="number" id="transport-short-amount" min="0" step="1" value="0" />
+                  </label>
+                </div>
+              </div>
+
+              <!-- transport-taxi -->
+              <div class="transport-option">
+                <label><input type="checkbox" id="transport-taxi-enabled" /> <span id="transport-taxi-label">Taxi / Uber</span></label>
+                <div id="transport-taxi-fields" class="adjust-fields conditional-fields transport-fields" hidden>
+                  <p class="mini-title" id="transport-taxi-subtitle">Taxi / Uber</p>
+                  <label id="transport-taxi-details-wrap">
+                    <span id="transport-taxi-details-label">Description</span>
+                    <textarea id="transport-taxi-details" placeholder="Ex.: 4 trajets Uber entre l'hotel, la gare et le site"></textarea>
+                  </label>
+                  <div class="yesno-row">
+                    <span id="transport-taxi-reimb-question">Est-ce qu'il rembourse par facture ?</span>
+                    <label><input type="radio" name="transport-taxi-reimb" value="yes" /> <span id="transport-taxi-reimb-yes-label">Oui</span></label>
+                    <label><input type="radio" name="transport-taxi-reimb" value="no" checked /> <span id="transport-taxi-reimb-no-label">Non</span></label>
+                  </div>
+                  <label id="transport-taxi-amount-wrap">
+                    <span id="transport-taxi-amount-label">Combien voulez-vous facturer pour le prendre en charge ?</span>
+                    <input type="number" id="transport-taxi-amount" min="0" step="1" value="0" />
+                  </label>
+                </div>
+              </div>
+
+              <!-- transport-car -->
+              <div class="transport-option">
+                <label><input type="checkbox" id="transport-car-enabled" /> <span id="transport-car-label">Voiture personnelle</span></label>
+                <div id="transport-car-fields" class="adjust-fields conditional-fields transport-fields" hidden>
+                  <p class="mini-title" id="transport-car-subtitle">Voiture personnelle</p>
+                  <label id="transport-car-amount-wrap">
+                    <span id="transport-car-distance-label">Nombre estimé de km</span>
+                    <input type="number" id="transport-car-distance" min="0" step="1" value="0" />
+                  </label>
+                  <label id="transport-car-rate-wrap">
+                    <span id="transport-car-rate-label">Coût par km (cents/km)</span>
+                    <input type="number" id="transport-car-rate" min="0" step="1" value="0" />
+                  </label>
+                  <p class="comp-total-line">
+                    <span id="transport-car-total-label">Total voiture personnelle</span>: <strong id="transport-car-total-output">0 $</strong>
+                  </p>
+                </div>
+              </div>
+
+              <!-- transport-material -->
+              <div class="transport-option">
+                <label><input type="checkbox" id="transport-material-enabled" /> <span id="transport-material-label">Transport de matériel</span></label>
+                <div id="transport-material-fields" class="adjust-fields conditional-fields transport-fields" hidden>
+                  <p class="mini-title" id="transport-material-subtitle">Transport de matériel</p>
+                  <p class="muted" id="transport-material-intro">Cette section s'applique si vous ne pouvez pas transporter votre matériel avec vous (par exemple : avion cargo). Si vous pouvez prendre votre matériel dans des bagages, ajoutez-les dans la description des autres modes de transport.</p>
+                  <label id="transport-material-details-wrap">
+                    <span id="transport-material-details-label">Description</span>
+                    <textarea id="transport-material-details" placeholder="Ex.: envoi cargo séparé de 2 caisses de matériel scénique"></textarea>
+                  </label>
+                  <div class="yesno-row">
+                    <span id="transport-material-client-question">Est-ce que le client s'en charge ?</span>
+                    <label><input type="radio" name="transport-material-client" value="yes" /> <span id="transport-material-client-yes-label">Oui</span></label>
+                    <label><input type="radio" name="transport-material-client" value="no" checked /> <span id="transport-material-client-no-label">Non</span></label>
+                  </div>
+                  <div id="transport-material-reimb-wrap" class="yesno-row">
+                    <span id="transport-material-reimb-question">Est-ce qu'il rembourse par facture ?</span>
+                    <label><input type="radio" name="transport-material-reimb" value="yes" /> <span id="transport-material-reimb-yes-label">Oui</span></label>
+                    <label><input type="radio" name="transport-material-reimb" value="no" checked /> <span id="transport-material-reimb-no-label">Non</span></label>
+                  </div>
+                  <label id="transport-material-amount-wrap">
+                    <span id="transport-material-amount-label">Combien voulez-vous facturer pour le prendre en charge ?</span>
+                    <input type="number" id="transport-material-amount" min="0" step="1" value="0" />
+                  </label>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- lodging -->
+          <div class="comp-subsection">
+            <h4 id="lodging-title">Logement</h4>
+            <div class="yesno-row">
+              <span id="lodging-expenses-question">Est-ce que vous allez avoir des dépenses de logements ?</span>
+              <label><input type="radio" name="lodging-expenses" value="yes" /> <span id="lodging-expenses-yes-label">Oui</span></label>
+              <label><input type="radio" name="lodging-expenses" value="no" checked /> <span id="lodging-expenses-no-label">Non</span></label>
+            </div>
+
+            <label id="lodging-details-wrap" class="adjust-fields" hidden>
+              <span id="lodging-details-label">Description</span>
+              <textarea id="lodging-details" placeholder="Ex.: 3 nuits a Quebec, 2 chambres pour l'equipe"></textarea>
+            </label>
+
+            <div id="lodging-client-wrap" class="yesno-row" hidden>
+              <span id="lodging-client-question">Est-ce que le client s'occupe du logement ?</span>
+              <label><input type="radio" name="lodging-client" value="yes" checked /> <span id="lodging-client-yes-label">Oui</span></label>
+              <label><input type="radio" name="lodging-client" value="no" /> <span id="lodging-client-no-label">Non</span></label>
+            </div>
+
+            <div id="lodging-reimb-wrap" class="yesno-row" hidden>
+              <span id="lodging-reimb-question">Est-ce qu'il rembourse par note de frais ?</span>
+              <label><input type="radio" name="lodging-reimb" value="yes" checked /> <span id="lodging-reimb-yes-label">Oui</span></label>
+              <label><input type="radio" name="lodging-reimb" value="no" /> <span id="lodging-reimb-no-label">Non</span></label>
+            </div>
+
+            <label id="lodging-amount-wrap" class="adjust-fields" hidden>
+              <span id="lodging-amount-label">Quel montant voulez-vous facturer pour le logement ?</span>
+              <input type="number" id="lodging-amount" min="0" step="1" value="0" />
+            </label>
+          </div>
+
+          <!-- meals -->
+          <div class="comp-subsection">
+            <h4 id="meals-title">Repas</h4>
+            <div class="yesno-row">
+              <span id="meals-expenses-question">Est-ce que vous allez avoir des dépenses pour vos repas ?</span>
+              <label><input type="radio" name="meals-expenses" value="yes" /> <span id="meals-expenses-yes-label">Oui</span></label>
+              <label><input type="radio" name="meals-expenses" value="no" checked /> <span id="meals-expenses-no-label">Non</span></label>
+            </div>
+
+            <div id="meals-wrap" class="meals-grid" hidden>
+              <table class="meals-table">
+                <thead>
+                  <tr>
+                    <th id="meals-col-name">Repas</th>
+                    <th id="meals-col-qty">Nombre</th>
+                    <th id="meals-col-unit">Coût unitaire</th>
+                    <th id="meals-col-total">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td id="meal-breakfast-label">Déjeuner</td>
+                    <td><input type="number" id="meal-breakfast-qty" min="0" step="1" value="0" /></td>
+                    <td><input type="number" id="meal-breakfast-unit" min="0" step="1" value="0" /></td>
+                    <td><span id="meal-breakfast-total">0 $</span></td>
+                  </tr>
+                  <tr>
+                    <td id="meal-lunch-label">Dîner</td>
+                    <td><input type="number" id="meal-lunch-qty" min="0" step="1" value="0" /></td>
+                    <td><input type="number" id="meal-lunch-unit" min="0" step="1" value="0" /></td>
+                    <td><span id="meal-lunch-total">0 $</span></td>
+                  </tr>
+                  <tr>
+                    <td id="meal-dinner-label">Souper</td>
+                    <td><input type="number" id="meal-dinner-qty" min="0" step="1" value="0" /></td>
+                    <td><input type="number" id="meal-dinner-unit" min="0" step="1" value="0" /></td>
+                    <td><span id="meal-dinner-total">0 $</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <p class="meal-grand-total"><span id="meal-grand-total-label">TOTAL</span>: <strong id="meal-grand-total">0 $</strong></p>
+            </div>
+          </div>
+
+        </div>
+
+        <p class="comp-total-line"><span id="comp-total-line-label">Total compensations et frais</span>: <strong id="comp-total-output">0 $</strong></p>
+      </section>
+
+      <!-- ── Generate PDF button ─────────────────────────────────────────────── -->
+      <div class="offer-actions">
+        <button type="button" class="btn-primary" id="generate-btn">
+          Générer l'offre de service (PDF)
+        </button>
+      </div>
+
+    </main>
+
+    <script src="js/i18n.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script src="js/hupr.js"></script>
+  </body>
+</html>
