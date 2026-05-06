@@ -152,13 +152,13 @@
   const mealsZoneSelect    = document.getElementById("meals-zone");
   const mealsWrap          = document.getElementById("meals-wrap");
   const mealBreakfastQty   = document.getElementById("meal-breakfast-qty");
-  const mealBreakfastUnit  = document.getElementById("meal-breakfast-unit");
+  const mealBreakfastUnitOutput  = document.getElementById("meal-breakfast-unit");
   const mealBreakfastTotal = document.getElementById("meal-breakfast-total");
   const mealLunchQty       = document.getElementById("meal-lunch-qty");
-  const mealLunchUnit      = document.getElementById("meal-lunch-unit");
+  const mealLunchUnitOutput      = document.getElementById("meal-lunch-unit");
   const mealLunchTotal     = document.getElementById("meal-lunch-total");
   const mealDinnerQty      = document.getElementById("meal-dinner-qty");
-  const mealDinnerUnit     = document.getElementById("meal-dinner-unit");
+  const mealDinnerUnitOutput     = document.getElementById("meal-dinner-unit");
   const mealDinnerTotal    = document.getElementById("meal-dinner-total");
   const mealGrandTotal     = document.getElementById("meal-grand-total");
 
@@ -193,6 +193,40 @@
 
   function sanitizeMealsZone(value) {
     return value === "bc" || value === "on" ? value : "qc";
+  }
+
+  function getMealRatesTable() {
+    const fallback = {
+      qc: { breakfast: 18, lunch: 24, dinner: 32 },
+      bc: { breakfast: 22, lunch: 29, dinner: 39 },
+      on: { breakfast: 20, lunch: 27, dinner: 36 },
+    };
+    return window.mealUnitRates && typeof window.mealUnitRates === "object"
+      ? window.mealUnitRates
+      : fallback;
+  }
+
+  function getMealUnitRatesForZone(zone) {
+    const rates = getMealRatesTable();
+    const key = sanitizeMealsZone(zone);
+    const row = rates[key] || rates.qc;
+    return {
+      breakfast: Number.isFinite(Number(row?.breakfast)) ? Math.max(0, Number(row.breakfast)) : 0,
+      lunch: Number.isFinite(Number(row?.lunch)) ? Math.max(0, Number(row.lunch)) : 0,
+      dinner: Number.isFinite(Number(row?.dinner)) ? Math.max(0, Number(row.dinner)) : 0,
+    };
+  }
+
+  function applyMealsUnitRatesFromZone() {
+    const zone = sanitizeMealsZone(compensationState?.travel?.meals?.zone);
+    compensationState.travel.meals.zone = zone;
+    const units = getMealUnitRatesForZone(zone);
+    compensationState.travel.meals.breakfast.unit = units.breakfast;
+    compensationState.travel.meals.lunch.unit = units.lunch;
+    compensationState.travel.meals.dinner.unit = units.dinner;
+    mealBreakfastUnitOutput.textContent = money(units.breakfast);
+    mealLunchUnitOutput.textContent = money(units.lunch);
+    mealDinnerUnitOutput.textContent = money(units.dinner);
   }
 
   function getMealsZoneLabel(zone, comp) {
@@ -636,6 +670,7 @@
   }
 
   let compensationState = loadCompensationState();
+  applyMealsUnitRatesFromZone();
 
   // ── Render resource items ─────────────────────────────────────────────────────
   function renderResourcesItems() {
@@ -739,11 +774,9 @@
     mealsExpensesNo.checked  = compensationState.travel.meals.hasExpenses !== "yes";
     mealsZoneSelect.value    = sanitizeMealsZone(compensationState.travel.meals.zone);
     mealBreakfastQty.value   = compensationState.travel.meals.breakfast.qty;
-    mealBreakfastUnit.value  = compensationState.travel.meals.breakfast.unit;
     mealLunchQty.value       = compensationState.travel.meals.lunch.qty;
-    mealLunchUnit.value      = compensationState.travel.meals.lunch.unit;
     mealDinnerQty.value      = compensationState.travel.meals.dinner.qty;
-    mealDinnerUnit.value     = compensationState.travel.meals.dinner.unit;
+    applyMealsUnitRatesFromZone();
 
     renderCompensationVisibility();
     renderCompensationTotals();
@@ -867,11 +900,9 @@
     compensationState.travel.meals.hasExpenses       = mealsExpensesYes.checked ? "yes" : "no";
     compensationState.travel.meals.zone           = sanitizeMealsZone(mealsZoneSelect.value);
     compensationState.travel.meals.breakfast.qty  = Math.max(0, Number(mealBreakfastQty.value)  || 0);
-    compensationState.travel.meals.breakfast.unit = Math.max(0, Number(mealBreakfastUnit.value) || 0);
     compensationState.travel.meals.lunch.qty      = Math.max(0, Number(mealLunchQty.value)      || 0);
-    compensationState.travel.meals.lunch.unit     = Math.max(0, Number(mealLunchUnit.value)     || 0);
     compensationState.travel.meals.dinner.qty     = Math.max(0, Number(mealDinnerQty.value)     || 0);
-    compensationState.travel.meals.dinner.unit    = Math.max(0, Number(mealDinnerUnit.value)    || 0);
+    applyMealsUnitRatesFromZone();
   }
 
   function onCompensationFormChange() {
@@ -947,7 +978,7 @@
     transportCarDistance, transportCarRate,
     transportMaterialEnabled, transportMaterialClientYes, transportMaterialClientNo, transportMaterialReimbYes, transportMaterialReimbNo, transportMaterialDetails, transportMaterialAmount,
     lodgingExpensesYes, lodgingExpensesNo, lodgingClientYes, lodgingClientNo, lodgingDetails, lodgingReimbYes, lodgingReimbNo, lodgingAmount,
-    mealsExpensesYes, mealsExpensesNo, mealsZoneSelect, mealBreakfastQty, mealBreakfastUnit, mealLunchQty, mealLunchUnit, mealDinnerQty, mealDinnerUnit,
+    mealsExpensesYes, mealsExpensesNo, mealsZoneSelect, mealBreakfastQty, mealLunchQty, mealDinnerQty,
   ];
 
   for (const input of compInputs) {

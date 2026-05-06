@@ -349,20 +349,20 @@
                 <tbody>
                   <tr>
                     <td id="meal-breakfast-label">Déjeuner</td>
-                    <td><input type="number" id="meal-breakfast-qty" min="0" step="1" value="0" /></td>
-                    <td><input type="number" id="meal-breakfast-unit" min="0" step="1" value="0" /></td>
+                    <td><input type="number" class="meal-qty-input" id="meal-breakfast-qty" min="0" step="1" value="0" /></td>
+                    <td><span class="meal-unit-fixed" id="meal-breakfast-unit">0 $</span></td>
                     <td><span id="meal-breakfast-total">0 $</span></td>
                   </tr>
                   <tr>
                     <td id="meal-lunch-label">Dîner</td>
-                    <td><input type="number" id="meal-lunch-qty" min="0" step="1" value="0" /></td>
-                    <td><input type="number" id="meal-lunch-unit" min="0" step="1" value="0" /></td>
+                    <td><input type="number" class="meal-qty-input" id="meal-lunch-qty" min="0" step="1" value="0" /></td>
+                    <td><span class="meal-unit-fixed" id="meal-lunch-unit">0 $</span></td>
                     <td><span id="meal-lunch-total">0 $</span></td>
                   </tr>
                   <tr>
                     <td id="meal-dinner-label">Souper</td>
-                    <td><input type="number" id="meal-dinner-qty" min="0" step="1" value="0" /></td>
-                    <td><input type="number" id="meal-dinner-unit" min="0" step="1" value="0" /></td>
+                    <td><input type="number" class="meal-qty-input" id="meal-dinner-qty" min="0" step="1" value="0" /></td>
+                    <td><span class="meal-unit-fixed" id="meal-dinner-unit">0 $</span></td>
                     <td><span id="meal-dinner-total">0 $</span></td>
                   </tr>
                 </tbody>
@@ -392,6 +392,7 @@
       referrerpolicy="no-referrer"
     ></script>
     <script src="js/hourly-rates.js"></script>
+    <script src="js/meal-rates.js"></script>
     <script src="js/hupr.js"></script>
   </body>
 </html>
