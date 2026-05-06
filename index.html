@@ -38,6 +38,15 @@
       <section class="results offer-info-section" id="offer-info-section">
         <h2 id="offer-info-title">Informations de l'offre de service</h2>
         <div class="offer-info-grid">
+          <label for="offer-number" id="offer-number-label">Numéro de l'offre de service</label>
+          <input
+            type="text"
+            id="offer-number"
+            name="offer-number"
+            autocomplete="off"
+            placeholder="Ex. HUPR-2026-001"
+          />
+
           <label for="offer-recipient" id="offer-recipient-label">Nom du destinataire</label>
           <input
             type="text"
@@ -319,6 +328,15 @@
             </div>
 
             <div id="meals-wrap" class="meals-grid" hidden>
+              <label for="meals-zone" class="adjust-fields">
+                <span id="meals-zone-label">Zone des dépenses</span>
+                <select id="meals-zone">
+                  <option value="qc" id="meals-zone-qc">Québec</option>
+                  <option value="bc" id="meals-zone-bc">Colombie-Britannique</option>
+                  <option value="on" id="meals-zone-on">Ontario</option>
+                </select>
+              </label>
+
               <table class="meals-table">
                 <thead>
                   <tr>

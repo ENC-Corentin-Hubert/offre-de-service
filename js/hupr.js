@@ -54,6 +54,8 @@
 
   const offerTitle            = document.getElementById("offer-title");
   const offerInfoTitle        = document.getElementById("offer-info-title");
+  const offerNumberLabel      = document.getElementById("offer-number-label");
+  const offerNumberInput      = document.getElementById("offer-number");
   const offerRecipientLabel   = document.getElementById("offer-recipient-label");
   const offerRecipientInput   = document.getElementById("offer-recipient");
   const offerEventLabel       = document.getElementById("offer-event-label");
@@ -147,6 +149,7 @@
 
   const mealsExpensesYes   = document.querySelector('input[name="meals-expenses"][value="yes"]');
   const mealsExpensesNo    = document.querySelector('input[name="meals-expenses"][value="no"]');
+  const mealsZoneSelect    = document.getElementById("meals-zone");
   const mealsWrap          = document.getElementById("meals-wrap");
   const mealBreakfastQty   = document.getElementById("meal-breakfast-qty");
   const mealBreakfastUnit  = document.getElementById("meal-breakfast-unit");
@@ -161,12 +164,13 @@
 
   // ── Service info state ────────────────────────────────────────────────────────
   function loadServiceInfoState() {
-    const defaults = { recipient: "", eventName: "", provider: "", description: "" };
+    const defaults = { offerNumber: "", recipient: "", eventName: "", provider: "", description: "" };
     try {
       const raw = localStorage.getItem(STORAGE_SERVICE_INFO);
       if (!raw) return defaults;
       const parsed = JSON.parse(raw);
       return {
+        offerNumber: typeof parsed.offerNumber === "string" ? parsed.offerNumber : "",
         recipient:   typeof parsed.recipient   === "string" ? parsed.recipient   : "",
         eventName:   typeof parsed.eventName   === "string" ? parsed.eventName   : "",
         provider:    typeof parsed.provider    === "string" ? parsed.provider    : "",
@@ -180,10 +184,21 @@
   }
 
   function syncServiceInfoForm() {
+    offerNumberInput.value      = serviceInfoState.offerNumber;
     offerRecipientInput.value   = serviceInfoState.recipient;
     offerEventInput.value       = serviceInfoState.eventName;
     offerProviderInput.value    = serviceInfoState.provider;
     offerDescriptionInput.value = serviceInfoState.description;
+  }
+
+  function sanitizeMealsZone(value) {
+    return value === "bc" || value === "on" ? value : "qc";
+  }
+
+  function getMealsZoneLabel(zone, comp) {
+    if (zone === "bc") return comp.mealsZoneBc;
+    if (zone === "on") return comp.mealsZoneOn;
+    return comp.mealsZoneQc;
   }
 
   let serviceInfoState = loadServiceInfoState();
@@ -516,6 +531,7 @@
         lodging: { hasExpenses: "no", clientCovers: "yes", reimbursed: "yes", details: "", amount: 0 },
         meals: {
           hasExpenses: "no",
+          zone: "qc",
           breakfast: { qty: 0, unit: 0 },
           lunch:     { qty: 0, unit: 0 },
           dinner:    { qty: 0, unit: 0 },
@@ -596,6 +612,7 @@
           },
           meals: {
             hasExpenses: parsed?.travel?.meals?.hasExpenses === "yes" ? "yes" : "no",
+            zone: sanitizeMealsZone(parsed?.travel?.meals?.zone),
             breakfast: {
               qty:  Number.isFinite(Number(parsed?.travel?.meals?.breakfast?.qty))  ? Math.max(0, Number(parsed.travel.meals.breakfast.qty))  : 0,
               unit: Number.isFinite(Number(parsed?.travel?.meals?.breakfast?.unit)) ? Math.max(0, Number(parsed.travel.meals.breakfast.unit)) : 0,
@@ -720,6 +737,7 @@
 
     mealsExpensesYes.checked = compensationState.travel.meals.hasExpenses === "yes";
     mealsExpensesNo.checked  = compensationState.travel.meals.hasExpenses !== "yes";
+    mealsZoneSelect.value    = sanitizeMealsZone(compensationState.travel.meals.zone);
     mealBreakfastQty.value   = compensationState.travel.meals.breakfast.qty;
     mealBreakfastUnit.value  = compensationState.travel.meals.breakfast.unit;
     mealLunchQty.value       = compensationState.travel.meals.lunch.qty;
@@ -847,6 +865,7 @@
     compensationState.travel.lodging.amount       = Math.max(0, Number(lodgingAmount.value) || 0);
 
     compensationState.travel.meals.hasExpenses       = mealsExpensesYes.checked ? "yes" : "no";
+    compensationState.travel.meals.zone           = sanitizeMealsZone(mealsZoneSelect.value);
     compensationState.travel.meals.breakfast.qty  = Math.max(0, Number(mealBreakfastQty.value)  || 0);
     compensationState.travel.meals.breakfast.unit = Math.max(0, Number(mealBreakfastUnit.value) || 0);
     compensationState.travel.meals.lunch.qty      = Math.max(0, Number(mealLunchQty.value)      || 0);
@@ -928,7 +947,7 @@
     transportCarDistance, transportCarRate,
     transportMaterialEnabled, transportMaterialClientYes, transportMaterialClientNo, transportMaterialReimbYes, transportMaterialReimbNo, transportMaterialDetails, transportMaterialAmount,
     lodgingExpensesYes, lodgingExpensesNo, lodgingClientYes, lodgingClientNo, lodgingDetails, lodgingReimbYes, lodgingReimbNo, lodgingAmount,
-    mealsExpensesYes, mealsExpensesNo, mealBreakfastQty, mealBreakfastUnit, mealLunchQty, mealLunchUnit, mealDinnerQty, mealDinnerUnit,
+    mealsExpensesYes, mealsExpensesNo, mealsZoneSelect, mealBreakfastQty, mealBreakfastUnit, mealLunchQty, mealLunchUnit, mealDinnerQty, mealDinnerUnit,
   ];
 
   for (const input of compInputs) {
@@ -974,9 +993,10 @@
   langEnBtn.addEventListener("click", () => setLanguage("en"));
 
   // ── Service info events ───────────────────────────────────────────────────────
-  for (const input of [offerRecipientInput, offerEventInput, offerProviderInput, offerDescriptionInput]) {
+  for (const input of [offerNumberInput, offerRecipientInput, offerEventInput, offerProviderInput, offerDescriptionInput]) {
     input.addEventListener("input", () => {
       serviceInfoState = {
+        offerNumber: offerNumberInput.value.trim(),
         recipient:   offerRecipientInput.value.trim(),
         eventName:   offerEventInput.value.trim(),
         provider:    offerProviderInput.value.trim(),
@@ -997,6 +1017,8 @@
 
     offerTitle.textContent            = tt.offer.title;
     offerInfoTitle.textContent        = tt.offer.infoTitle;
+    offerNumberLabel.textContent      = tt.offer.offerNumberLabel;
+    offerNumberInput.placeholder      = tt.offer.offerNumberPlaceholder;
     offerRecipientLabel.textContent   = tt.offer.recipientLabel;
     offerRecipientInput.placeholder   = tt.offer.recipientPlaceholder;
     offerEventLabel.textContent       = tt.offer.eventLabel;
@@ -1105,6 +1127,10 @@
     setTextById("meals-expenses-question",  comp.mealsExpensesQuestion);
     setTextById("meals-expenses-yes-label", tt.offer.yes);
     setTextById("meals-expenses-no-label",  tt.offer.no);
+    setTextById("meals-zone-label",         comp.mealsZoneLabel);
+    setTextById("meals-zone-qc",            comp.mealsZoneQc);
+    setTextById("meals-zone-bc",            comp.mealsZoneBc);
+    setTextById("meals-zone-on",            comp.mealsZoneOn);
     setTextById("meals-col-name",           comp.mealsColName);
     setTextById("meals-col-qty",            comp.mealsColQty);
     setTextById("meals-col-unit",           comp.mealsColUnit);
@@ -1211,10 +1237,11 @@
     }
 
     if (compensationState.travel.meals.hasExpenses === "yes") {
+      const mealsZoneLabel = getMealsZoneLabel(compensationState.travel.meals.zone, tt.offer.compensation);
       const mealsTotal = compensationState.travel.meals.breakfast.qty * compensationState.travel.meals.breakfast.unit
                        + compensationState.travel.meals.lunch.qty     * compensationState.travel.meals.lunch.unit
                        + compensationState.travel.meals.dinner.qty    * compensationState.travel.meals.dinner.unit;
-      if (mealsTotal > 0) details.push(`${tt.offer.compensation.pdfMealsLabel}: +${money(mealsTotal)}`);
+      if (mealsTotal > 0) details.push(`${tt.offer.compensation.pdfMealsLabel} (${tt.offer.compensation.pdfMealsZoneLabel}: ${mealsZoneLabel}): +${money(mealsTotal)}`);
     }
 
     return { details, conditions };
@@ -1261,6 +1288,7 @@
     doc.text(tt.offer.pdfInfoTitle, margin, y);
 
     const infoRows = [
+      { label: tt.offer.offerNumberLabel, value: serviceInfoState.offerNumber || tt.offer.pdfNotProvided },
       { label: tt.offer.recipientLabel,   value: serviceInfoState.recipient   || tt.offer.pdfNotProvided },
       { label: tt.offer.eventLabel,       value: serviceInfoState.eventName   || tt.offer.pdfNotProvided },
       { label: tt.offer.providerLabel,    value: serviceInfoState.provider    || tt.offer.pdfNotProvided },
