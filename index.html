@@ -75,6 +75,24 @@
         </div>
       </section>
 
+      <!-- ── Team workload section ─────────────────────────────────────────── -->
+      <section class="results" id="workload-section">
+        <h2 id="workload-title">Équipe et tâches</h2>
+        <p class="muted" id="workload-hint">
+          Ajoutez les personnes du projet, leurs tâches, et le taux horaire appliqué pour chaque tâche.
+        </p>
+
+        <div class="workload-actions">
+          <button type="button" class="btn-resource-add" id="workload-add-person-btn">Ajouter une personne</button>
+        </div>
+
+        <div id="workload-people" class="workload-people"></div>
+
+        <p class="comp-total-line">
+          <span id="workload-total-line-label">Sous-total équipe et tâches</span>: <strong id="workload-total-output">0 $</strong>
+        </p>
+      </section>
+
       <!-- ── Compensations section ───────────────────────────────────────────── -->
       <section class="results" id="compensation-section">
         <h2 id="comp-title">Compensations et frais</h2>
@@ -355,6 +373,7 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     ></script>
+    <script src="js/hourly-rates.js"></script>
     <script src="js/hupr.js"></script>
   </body>
 </html>

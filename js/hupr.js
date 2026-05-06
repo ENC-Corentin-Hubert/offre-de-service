@@ -9,6 +9,7 @@
   const STORAGE_LANG          = "feeToolLanguage";
   const STORAGE_SERVICE_INFO  = "huprServiceInfo";
   const STORAGE_COMPENSATIONS = "huprCompensations";
+  const STORAGE_WORKLOAD      = "huprWorkload";
 
   // ── Language & formatting ────────────────────────────────────────────────────
   let currentLang = localStorage.getItem(STORAGE_LANG) || "fr";
@@ -37,6 +38,15 @@
     if (node) node.textContent = text;
   }
 
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   // ── DOM refs ─────────────────────────────────────────────────────────────────
   const langFrBtn        = document.getElementById("lang-fr");
   const langEnBtn        = document.getElementById("lang-en");
@@ -52,6 +62,12 @@
   const offerProviderInput    = document.getElementById("offer-provider");
   const offerDescriptionLabel = document.getElementById("offer-description-label");
   const offerDescriptionInput = document.getElementById("offer-description");
+
+  const workloadTitle        = document.getElementById("workload-title");
+  const workloadHint         = document.getElementById("workload-hint");
+  const workloadAddPersonBtn = document.getElementById("workload-add-person-btn");
+  const workloadPeople       = document.getElementById("workload-people");
+  const workloadTotalOutput  = document.getElementById("workload-total-output");
 
   const compTotalOutput = document.getElementById("comp-total-output");
   const generateBtn     = document.getElementById("generate-btn");
@@ -171,6 +187,290 @@
   }
 
   let serviceInfoState = loadServiceInfoState();
+
+  // ── Workload rates & state ──────────────────────────────────────────────────
+  function getRatesTable() {
+    const fallback = {
+      maitrise: { min: 65, max: 95 },
+      phd: { min: 80, max: 120 },
+      oiq: { min: 90, max: 140 },
+    };
+    return window.hourlyRateBounds && typeof window.hourlyRateBounds === "object"
+      ? window.hourlyRateBounds
+      : fallback;
+  }
+
+  function getDegreeBounds(degreeKey) {
+    const rates = getRatesTable();
+    const key = Object.prototype.hasOwnProperty.call(rates, degreeKey) ? degreeKey : "maitrise";
+    const row = rates[key] || rates.maitrise;
+    const min = Number.isFinite(Number(row?.min)) ? Math.max(0, Number(row.min)) : 0;
+    const maxBase = Number.isFinite(Number(row?.max)) ? Math.max(0, Number(row.max)) : min;
+    const max = Math.max(min, maxBase);
+    return { min, max, key };
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function getTaskDefaults(degreeKey = "maitrise") {
+    const bounds = getDegreeBounds(degreeKey);
+    return {
+      degreeKey: bounds.key,
+      hours: 0,
+      hourlyRate: bounds.min,
+      description: "",
+    };
+  }
+
+  function sanitizeTask(task) {
+    const fallback = getTaskDefaults("maitrise");
+    if (!task || typeof task !== "object") return fallback;
+    const bounds = getDegreeBounds(task.degreeKey);
+    const hours = Number.isFinite(Number(task.hours)) ? Math.max(0, Math.round(Number(task.hours))) : 0;
+    const rateRaw = Number.isFinite(Number(task.hourlyRate)) ? Number(task.hourlyRate) : bounds.min;
+    return {
+      degreeKey: bounds.key,
+      hours,
+      hourlyRate: clamp(Math.round(rateRaw), bounds.min, bounds.max),
+      description: typeof task.description === "string" ? task.description : "",
+    };
+  }
+
+  function sanitizePerson(person) {
+    return {
+      name: typeof person?.name === "string" ? person.name : "",
+      tasks: Array.isArray(person?.tasks) ? person.tasks.map(sanitizeTask) : [],
+    };
+  }
+
+  function loadWorkloadState() {
+    const defaults = { people: [] };
+    try {
+      const raw = localStorage.getItem(STORAGE_WORKLOAD);
+      if (!raw) return defaults;
+      const parsed = JSON.parse(raw);
+      return {
+        people: Array.isArray(parsed?.people) ? parsed.people.map(sanitizePerson) : [],
+      };
+    } catch (_) {
+      return defaults;
+    }
+  }
+
+  function saveWorkloadState() {
+    localStorage.setItem(STORAGE_WORKLOAD, JSON.stringify(workloadState));
+  }
+
+  let workloadState = loadWorkloadState();
+
+  function getTaskTotal(task) {
+    return (Math.max(0, Number(task.hours) || 0) * Math.max(0, Number(task.hourlyRate) || 0));
+  }
+
+  function getWorkloadTotal() {
+    return workloadState.people.reduce((sum, person) => {
+      return sum + person.tasks.reduce((taskSum, task) => taskSum + getTaskTotal(task), 0);
+    }, 0);
+  }
+
+  function getDegreeLabel(degreeKey, comp) {
+    if (degreeKey === "phd") return comp.workloadDegreePhd;
+    if (degreeKey === "oiq") return comp.workloadDegreeOiq;
+    return comp.workloadDegreeMaitrise;
+  }
+
+  function renderWorkloadTotals() {
+    workloadTotalOutput.textContent = money(getWorkloadTotal());
+  }
+
+  function updateSliderFill(slider) {
+    if (!(slider instanceof HTMLInputElement)) return;
+    const min = Number(slider.min || 0);
+    const max = Number(slider.max || 0);
+    const value = Number(slider.value || 0);
+    const span = max - min;
+    const pct = span > 0 ? ((value - min) / span) * 100 : 0;
+    slider.style.setProperty("--slider-pct", `${Math.max(0, Math.min(100, pct))}%`);
+  }
+
+  function renderWorkloadPeople() {
+    const comp = t().offer.compensation;
+    workloadPeople.innerHTML = workloadState.people.map((person, personIndex) => {
+      const tasksMarkup = person.tasks.length
+        ? person.tasks.map((task, taskIndex) => {
+            const bounds = getDegreeBounds(task.degreeKey);
+            const taskTotal = getTaskTotal(task);
+            return `
+              <article class="task-item" data-person-index="${personIndex}" data-task-index="${taskIndex}">
+                <div class="task-head">
+                  <strong>${comp.workloadTaskTitle} ${taskIndex + 1}</strong>
+                  <button type="button" class="btn-resource-remove" data-action="remove-task" data-person-index="${personIndex}" data-task-index="${taskIndex}">${comp.workloadRemoveTaskBtn}</button>
+                </div>
+                <div class="task-fields">
+                  <div class="task-grid">
+                    <label class="task-field">
+                      <span>${comp.workloadDegreeLabel}</span>
+                      <select data-field="degree" data-person-index="${personIndex}" data-task-index="${taskIndex}">
+                        <option value="maitrise" ${task.degreeKey === "maitrise" ? "selected" : ""}>${comp.workloadDegreeMaitrise}</option>
+                        <option value="phd" ${task.degreeKey === "phd" ? "selected" : ""}>${comp.workloadDegreePhd}</option>
+                        <option value="oiq" ${task.degreeKey === "oiq" ? "selected" : ""}>${comp.workloadDegreeOiq}</option>
+                      </select>
+                    </label>
+                    <label class="task-field">
+                      <span>${comp.workloadHoursLabel}</span>
+                      <input type="number" min="0" step="1" value="${task.hours}" data-field="hours" data-person-index="${personIndex}" data-task-index="${taskIndex}" />
+                    </label>
+                  </div>
+                  <label class="task-field task-field-full">
+                    <span>${comp.workloadRateLabel}</span>
+                    <input class="fee-slider" type="range" min="${bounds.min}" max="${bounds.max}" step="1" value="${task.hourlyRate}" data-field="hourlyRate" data-person-index="${personIndex}" data-task-index="${taskIndex}" />
+                    <div class="task-rate-range"><span>${money(bounds.min)}</span><span>${money(bounds.max)}</span></div>
+                    <p class="task-rate-current">${comp.workloadRateCurrentLabel} <strong>${money(task.hourlyRate)}</strong></p>
+                  </label>
+                  <label class="task-field task-field-full">
+                    <span>${comp.workloadTaskDescriptionLabel}</span>
+                    <input type="text" value="${escapeHtml(task.description)}" placeholder="${comp.workloadTaskDescriptionPlaceholder}" data-field="description" data-person-index="${personIndex}" data-task-index="${taskIndex}" />
+                  </label>
+                  <p class="task-total-line">${comp.workloadTaskTotalLabel}: <strong>${money(taskTotal)}</strong></p>
+                </div>
+              </article>
+            `;
+          }).join("")
+        : `<p class="task-empty">${comp.workloadNoTask}</p>`;
+
+      return `
+        <article class="person-card" data-person-index="${personIndex}">
+          <div class="person-head">
+            <strong>${comp.workloadPersonCardTitle} ${personIndex + 1}</strong>
+            <button type="button" class="btn-resource-remove" data-action="remove-person" data-person-index="${personIndex}">${comp.workloadRemovePersonBtn}</button>
+          </div>
+          <label class="person-name">
+            <span>${comp.workloadPersonLabel}</span>
+            <input type="text" value="${escapeHtml(person.name)}" placeholder="${comp.workloadPersonPlaceholder}" data-field="personName" data-person-index="${personIndex}" />
+          </label>
+          <div class="person-tasks">${tasksMarkup}</div>
+          <button type="button" class="btn-resource-add" data-action="add-task" data-person-index="${personIndex}">${comp.workloadAddTaskBtn}</button>
+        </article>
+      `;
+    }).join("");
+
+    for (const slider of workloadPeople.querySelectorAll('input[type="range"].fee-slider')) {
+      updateSliderFill(slider);
+    }
+  }
+
+  function updateWorkloadTaskRowOutputs(target, task) {
+    const taskRow = target.closest(".task-item");
+    if (!(taskRow instanceof HTMLElement)) return;
+    const rateStrong = taskRow.querySelector(".task-rate-current strong");
+    if (rateStrong) rateStrong.textContent = money(task.hourlyRate);
+    const totalStrong = taskRow.querySelector(".task-total-line strong");
+    if (totalStrong) totalStrong.textContent = money(getTaskTotal(task));
+  }
+
+  workloadAddPersonBtn.addEventListener("click", () => {
+    workloadState.people.push({ name: "", tasks: [getTaskDefaults("maitrise")] });
+    saveWorkloadState();
+    renderWorkloadPeople();
+    renderWorkloadTotals();
+  });
+
+  workloadPeople.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const action = target.getAttribute("data-action");
+    if (!action) return;
+    const personIndex = Number(target.getAttribute("data-person-index"));
+    if (!Number.isInteger(personIndex) || personIndex < 0 || personIndex >= workloadState.people.length) return;
+
+    if (action === "remove-person") {
+      workloadState.people.splice(personIndex, 1);
+      saveWorkloadState();
+      renderWorkloadPeople();
+      renderWorkloadTotals();
+      return;
+    }
+
+    if (action === "add-task") {
+      workloadState.people[personIndex].tasks.push(getTaskDefaults("maitrise"));
+      saveWorkloadState();
+      renderWorkloadPeople();
+      renderWorkloadTotals();
+      return;
+    }
+
+    if (action === "remove-task") {
+      const taskIndex = Number(target.getAttribute("data-task-index"));
+      const tasks = workloadState.people[personIndex].tasks;
+      if (!Number.isInteger(taskIndex) || taskIndex < 0 || taskIndex >= tasks.length) return;
+      tasks.splice(taskIndex, 1);
+      saveWorkloadState();
+      renderWorkloadPeople();
+      renderWorkloadTotals();
+    }
+  });
+
+  workloadPeople.addEventListener("input", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const field = target.getAttribute("data-field");
+    if (!field) return;
+    const personIndex = Number(target.getAttribute("data-person-index"));
+    if (!Number.isInteger(personIndex) || personIndex < 0 || personIndex >= workloadState.people.length) return;
+
+    if (field === "personName" && target instanceof HTMLInputElement) {
+      workloadState.people[personIndex].name = target.value;
+      saveWorkloadState();
+      return;
+    }
+
+    const taskIndex = Number(target.getAttribute("data-task-index"));
+    const tasks = workloadState.people[personIndex].tasks;
+    if (!Number.isInteger(taskIndex) || taskIndex < 0 || taskIndex >= tasks.length) return;
+    const task = tasks[taskIndex];
+
+    if (field === "hours" && target instanceof HTMLInputElement) {
+      task.hours = Math.max(0, Math.round(Number(target.value) || 0));
+      saveWorkloadState();
+      renderWorkloadTotals();
+      updateWorkloadTaskRowOutputs(target, task);
+      return;
+    }
+    if (field === "hourlyRate" && target instanceof HTMLInputElement) {
+      task.hourlyRate = Math.max(0, Math.round(Number(target.value) || 0));
+      updateSliderFill(target);
+      saveWorkloadState();
+      renderWorkloadTotals();
+      updateWorkloadTaskRowOutputs(target, task);
+      return;
+    }
+    if (field === "description" && target instanceof HTMLInputElement) {
+      task.description = target.value;
+      saveWorkloadState();
+      return;
+    }
+  });
+
+  workloadPeople.addEventListener("change", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) return;
+    const field = target.getAttribute("data-field");
+    if (field !== "degree") return;
+    const personIndex = Number(target.getAttribute("data-person-index"));
+    const taskIndex = Number(target.getAttribute("data-task-index"));
+    if (!Number.isInteger(personIndex) || personIndex < 0 || personIndex >= workloadState.people.length) return;
+    const tasks = workloadState.people[personIndex].tasks;
+    if (!Number.isInteger(taskIndex) || taskIndex < 0 || taskIndex >= tasks.length) return;
+    const task = tasks[taskIndex];
+    const bounds = getDegreeBounds(target.value);
+    task.degreeKey = bounds.key;
+    task.hourlyRate = clamp(task.hourlyRate, bounds.min, bounds.max);
+    saveWorkloadState();
+    renderWorkloadPeople();
+    renderWorkloadTotals();
+  });
 
   // ── Resource helpers ──────────────────────────────────────────────────────────
   function normalizeResourceKind(value) {
@@ -666,6 +966,7 @@
     moneyFormatter = buildFormatter(lang);
     updateLanguageButtons();
     applyTranslations();
+    renderWorkloadTotals();
     renderCompensationTotals();
   }
 
@@ -704,6 +1005,12 @@
     offerProviderInput.placeholder    = tt.offer.providerPlaceholder;
     offerDescriptionLabel.textContent = tt.offer.descriptionLabel;
     offerDescriptionInput.placeholder = tt.offer.descriptionPlaceholder;
+
+    workloadTitle.textContent = comp.workloadTitle;
+    workloadHint.textContent = comp.workloadHint;
+    setTextById("workload-add-person-btn", comp.workloadAddPersonBtn);
+    setTextById("workload-total-line-label", comp.workloadSectionTotalLabel);
+    renderWorkloadPeople();
 
     setTextById("comp-title", comp.title);
     setTextById("comp-hint",  comp.hint);
@@ -819,6 +1126,29 @@
   function appendDescription(baseText, description) {
     const clean = (description || "").trim();
     return clean ? `${baseText} (${clean})` : baseText;
+  }
+
+  function getWorkloadPdfBlocks() {
+    const tt = t();
+    const comp = tt.offer.compensation;
+    const details = [];
+    for (const person of workloadState.people) {
+      const personName = (person.name || "").trim() || tt.offer.pdfNotProvided;
+      details.push(`${comp.pdfWorkloadPersonLabel}: ${personName}`);
+      if (!person.tasks.length) {
+        details.push(`  - ${comp.workloadNoTask}`);
+        continue;
+      }
+      for (const task of person.tasks) {
+        const degree = getDegreeLabel(task.degreeKey, comp);
+        const taskName = (task.description || "").trim() || tt.offer.pdfNotProvided;
+        const taskTotal = getTaskTotal(task);
+        details.push(
+          `  - ${comp.pdfWorkloadTaskLabel}: ${taskName} | ${comp.pdfWorkloadDegreeLabel}: ${degree} | ${comp.pdfWorkloadHoursLabel}: ${task.hours} | ${comp.pdfWorkloadRateLabel}: ${money(task.hourlyRate)} | ${comp.pdfWorkloadTaskTotalLabel}: ${money(taskTotal)}`
+        );
+      }
+    }
+    return details;
   }
 
   function getCompensationPdfBlocks() {
@@ -948,6 +1278,39 @@
       y += wrapped.length * 5 + 1;
     }
 
+    // Team workload total box
+    const workloadTotal = getWorkloadTotal();
+    y += 7;
+    if (y > 270) { doc.addPage(); y = 20; }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(18, 84, 90);
+    doc.text(tt.offer.compensation.pdfWorkloadTitle, margin, y);
+
+    y += 7;
+    doc.setFillColor(252, 245, 237);
+    doc.rect(margin, y - 5, contentW, 10, "F");
+    doc.setDrawColor(200, 210, 210);
+    doc.rect(margin, y - 5, contentW, 10);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(160, 98, 26);
+    doc.text(`${tt.offer.compensation.pdfWorkloadSectionTotalLabel}: ${money(workloadTotal)}`, margin + 3, y + 1.5);
+
+    // Team workload details section
+    const workloadDetails = getWorkloadPdfBlocks();
+    y += 12;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(30, 27, 22);
+    const workloadLines = workloadDetails.length ? workloadDetails : [tt.offer.pdfNoDetails];
+    for (const item of workloadLines) {
+      const wrapped = doc.splitTextToSize(`- ${item}`, contentW);
+      if (y + wrapped.length * 5 > 285) { doc.addPage(); y = 20; }
+      doc.text(wrapped, margin, y);
+      y += wrapped.length * 5 + 2;
+    }
+
     // Compensations total box
     const compTotal = getCompensationTotal();
     y += 7;
@@ -1008,17 +1371,8 @@
       y += wrapped.length * 5 + 2;
     }
 
-    // Support note
-    y += 4;
-    if (y > 285) { doc.addPage(); y = 20; }
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(9);
-    doc.setTextColor(70, 70, 70);
-    const supportLines = doc.splitTextToSize(tt.offer.supportNote, contentW);
-    doc.text(supportLines, margin, y);
-
     // Signatures
-    y += supportLines.length * 4 + 8;
+    y += 8;
     if (y > 245) { doc.addPage(); y = 24; }
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
@@ -1053,6 +1407,7 @@
   updateLanguageButtons();
   applyTranslations();
   syncServiceInfoForm();
+  renderWorkloadTotals();
   syncCompensationForm();
   initHelpBubbles();
 })();
