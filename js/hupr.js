@@ -428,7 +428,6 @@
             return `
               <article class="task-item" data-person-index="${personIndex}" data-task-index="${taskIndex}">
                 <div class="task-head">
-                  <strong>${comp.workloadTaskTitle} ${taskIndex + 1}</strong>
                   <button type="button" class="btn-resource-remove" data-action="remove-task" data-person-index="${personIndex}" data-task-index="${taskIndex}">${comp.workloadRemoveTaskBtn}</button>
                 </div>
                 <div class="task-fields">
@@ -468,7 +467,6 @@
       return `
         <article class="person-card" data-person-index="${personIndex}">
           <div class="person-head">
-            <strong>${comp.workloadPersonCardTitle} ${personIndex + 1}</strong>
             <button type="button" class="btn-resource-remove" data-action="remove-person" data-person-index="${personIndex}">${comp.workloadRemovePersonBtn}</button>
           </div>
           <label class="person-name">
