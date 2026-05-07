@@ -361,6 +361,84 @@
   margin-top: 0.6rem;
 }
 
+.project-section-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.project-section-grid label,
+.project-tasks-header h3 {
+  color: var(--accent-strong);
+}
+
+.project-section-grid textarea {
+  min-height: 96px;
+  border: 1px solid rgba(20, 20, 20, 0.2);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #fff;
+  resize: vertical;
+}
+
+.project-tasks-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.project-tasks-header h3 {
+  margin: 0;
+}
+
+.project-tasks-items {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.7rem;
+}
+
+.project-task-item {
+  border: 1px solid rgba(20, 20, 20, 0.12);
+  border-radius: 10px;
+  padding: 0.7rem 0.75rem;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.project-task-fields {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.project-task-fields label {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.project-task-fields input,
+.project-task-fields textarea,
+.task-fields select {
+  border: 1px solid rgba(20, 20, 20, 0.2);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #fff;
+}
+
+.project-task-fields textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.project-task-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
 .workload-people {
   display: grid;
   gap: 0.75rem;

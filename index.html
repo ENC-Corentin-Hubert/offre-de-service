@@ -73,15 +73,28 @@
             autocomplete="name"
             placeholder="Ex. Prénom Nom"
           />
+        </div>
+      </section>
 
-          <label for="offer-description" id="offer-description-label">Brève description de la prestation</label>
+      <!-- ── Project description section ───────────────────────────────────── -->
+      <section class="results" id="project-section">
+        <h2 id="project-title">Description du projet</h2>
+        <div class="project-section-grid">
+          <label for="project-description" id="project-description-label">Description du projet</label>
           <textarea
-            id="offer-description"
-            name="offer-description"
+            id="project-description"
+            name="project-description"
             rows="4"
-            placeholder="Décrivez brièvement ce que fera l'artiste pour cet événement."
+            placeholder="Décrivez le projet et son contexte."
           ></textarea>
         </div>
+
+        <div class="project-tasks-header">
+          <h3 id="project-tasks-title">Tâches du projet</h3>
+          <button type="button" class="btn-resource-add" id="project-add-task-btn">Ajouter une tâche</button>
+        </div>
+        <p class="muted" id="project-tasks-hint">Listez les tâches associées au projet pour pouvoir ensuite les attribuer aux personnes.</p>
+        <div id="project-tasks-items" class="project-tasks-items"></div>
       </section>
 
       <!-- ── Team workload section ─────────────────────────────────────────── -->

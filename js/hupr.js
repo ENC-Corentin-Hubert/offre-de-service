@@ -62,8 +62,14 @@
   const offerEventInput       = document.getElementById("offer-event");
   const offerProviderLabel    = document.getElementById("offer-provider-label");
   const offerProviderInput    = document.getElementById("offer-provider");
-  const offerDescriptionLabel = document.getElementById("offer-description-label");
-  const offerDescriptionInput = document.getElementById("offer-description");
+
+  const projectTitle          = document.getElementById("project-title");
+  const projectDescriptionLabel = document.getElementById("project-description-label");
+  const projectDescriptionInput = document.getElementById("project-description");
+  const projectTasksTitle     = document.getElementById("project-tasks-title");
+  const projectTasksHint      = document.getElementById("project-tasks-hint");
+  const projectAddTaskBtn     = document.getElementById("project-add-task-btn");
+  const projectTasksItems     = document.getElementById("project-tasks-items");
 
   const workloadTitle        = document.getElementById("workload-title");
   const workloadHint         = document.getElementById("workload-hint");
@@ -163,8 +169,25 @@
   const mealGrandTotal     = document.getElementById("meal-grand-total");
 
   // ── Service info state ────────────────────────────────────────────────────────
+  function createProjectTaskId() {
+    return `project-task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function getProjectTaskDefaults() {
+    return { id: createProjectTaskId(), title: "", description: "" };
+  }
+
+  function sanitizeProjectTask(task) {
+    if (!task || typeof task !== "object") return getProjectTaskDefaults();
+    return {
+      id: typeof task.id === "string" && task.id.trim() ? task.id : createProjectTaskId(),
+      title: typeof task.title === "string" ? task.title : "",
+      description: typeof task.description === "string" ? task.description : "",
+    };
+  }
+
   function loadServiceInfoState() {
-    const defaults = { offerNumber: "", recipient: "", eventName: "", provider: "", description: "" };
+    const defaults = { offerNumber: "", recipient: "", eventName: "", provider: "", projectDescription: "", projectTasks: [] };
     try {
       const raw = localStorage.getItem(STORAGE_SERVICE_INFO);
       if (!raw) return defaults;
@@ -174,7 +197,10 @@
         recipient:   typeof parsed.recipient   === "string" ? parsed.recipient   : "",
         eventName:   typeof parsed.eventName   === "string" ? parsed.eventName   : "",
         provider:    typeof parsed.provider    === "string" ? parsed.provider    : "",
-        description: typeof parsed.description === "string" ? parsed.description : "",
+        projectDescription: typeof parsed.projectDescription === "string"
+          ? parsed.projectDescription
+          : typeof parsed.description === "string" ? parsed.description : "",
+        projectTasks: Array.isArray(parsed.projectTasks) ? parsed.projectTasks.map(sanitizeProjectTask) : [],
       };
     } catch (_) { return defaults; }
   }
@@ -188,7 +214,48 @@
     offerRecipientInput.value   = serviceInfoState.recipient;
     offerEventInput.value       = serviceInfoState.eventName;
     offerProviderInput.value    = serviceInfoState.provider;
-    offerDescriptionInput.value = serviceInfoState.description;
+    projectDescriptionInput.value = serviceInfoState.projectDescription;
+  }
+
+  function getProjectTaskById(taskId) {
+    return (serviceInfoState.projectTasks || []).find((task) => task.id === taskId) || null;
+  }
+
+  function syncWorkloadTaskSelections() {
+    const validIds = new Set((serviceInfoState.projectTasks || []).map((task) => task.id));
+    for (const person of workloadState.people) {
+      for (const task of person.tasks) {
+        if (!validIds.has(task.selectedProjectTaskId)) task.selectedProjectTaskId = "";
+      }
+    }
+  }
+
+  function renderProjectTasks() {
+    const tt = t();
+    const tasks = serviceInfoState.projectTasks || [];
+    if (!tasks.length) {
+      projectTasksItems.innerHTML = `<p class="project-task-empty">${tt.offer.projectTaskEmpty}</p>`;
+      return;
+    }
+
+    projectTasksItems.innerHTML = tasks.map((task, index) => `
+      <article class="project-task-item" data-project-task-id="${task.id}">
+        <div class="task-head">
+          <strong>${tt.offer.projectTaskCardTitle} ${index + 1}</strong>
+          <button type="button" class="btn-resource-remove" data-project-task-remove="${task.id}">${tt.offer.projectTaskRemoveBtn}</button>
+        </div>
+        <div class="project-task-fields">
+          <label>
+            <span>${tt.offer.projectTaskTitleLabel}</span>
+            <input type="text" value="${escapeHtml(task.title)}" placeholder="${tt.offer.projectTaskTitlePlaceholder}" data-project-task-field="title" data-project-task-id="${task.id}" />
+          </label>
+          <label>
+            <span>${tt.offer.projectTaskDescriptionLabel}</span>
+            <textarea data-project-task-field="description" data-project-task-id="${task.id}" placeholder="${tt.offer.projectTaskDescriptionPlaceholder}">${escapeHtml(task.description)}</textarea>
+          </label>
+        </div>
+      </article>
+    `).join("");
   }
 
   function sanitizeMealsZone(value) {
@@ -267,9 +334,9 @@
     const bounds = getDegreeBounds(degreeKey);
     return {
       degreeKey: bounds.key,
+      selectedProjectTaskId: "",
       hours: 0,
       hourlyRate: bounds.min,
-      description: "",
     };
   }
 
@@ -281,9 +348,9 @@
     const rateRaw = Number.isFinite(Number(task.hourlyRate)) ? Number(task.hourlyRate) : bounds.min;
     return {
       degreeKey: bounds.key,
+      selectedProjectTaskId: typeof task.selectedProjectTaskId === "string" ? task.selectedProjectTaskId : "",
       hours,
       hourlyRate: clamp(Math.round(rateRaw), bounds.min, bounds.max),
-      description: typeof task.description === "string" ? task.description : "",
     };
   }
 
@@ -346,11 +413,18 @@
 
   function renderWorkloadPeople() {
     const comp = t().offer.compensation;
+    const projectTasks = serviceInfoState.projectTasks || [];
     workloadPeople.innerHTML = workloadState.people.map((person, personIndex) => {
       const tasksMarkup = person.tasks.length
         ? person.tasks.map((task, taskIndex) => {
             const bounds = getDegreeBounds(task.degreeKey);
             const taskTotal = getTaskTotal(task);
+            const taskOptions = projectTasks.length
+              ? [`<option value="">${comp.workloadTaskSelectPlaceholder}</option>`].concat(projectTasks.map((projectTask) => {
+                  const selected = projectTask.id === task.selectedProjectTaskId ? "selected" : "";
+                  return `<option value="${projectTask.id}" ${selected}>${escapeHtml(projectTask.title || comp.workloadTaskSelectPlaceholder)}</option>`;
+                })).join("")
+              : `<option value="" selected>${comp.workloadTaskSelectEmpty}</option>`;
             return `
               <article class="task-item" data-person-index="${personIndex}" data-task-index="${taskIndex}">
                 <div class="task-head">
@@ -359,6 +433,12 @@
                 </div>
                 <div class="task-fields">
                   <div class="task-grid">
+                    <label class="task-field task-field-full">
+                      <span>${comp.workloadTaskSelectLabel}</span>
+                      <select data-field="selectedProjectTaskId" data-person-index="${personIndex}" data-task-index="${taskIndex}" ${projectTasks.length ? "" : "disabled"}>
+                        ${taskOptions}
+                      </select>
+                    </label>
                     <label class="task-field">
                       <span>${comp.workloadDegreeLabel}</span>
                       <select data-field="degree" data-person-index="${personIndex}" data-task-index="${taskIndex}">
@@ -377,10 +457,6 @@
                     <input class="fee-slider" type="range" min="${bounds.min}" max="${bounds.max}" step="1" value="${task.hourlyRate}" data-field="hourlyRate" data-person-index="${personIndex}" data-task-index="${taskIndex}" />
                     <div class="task-rate-range"><span>${money(bounds.min)}</span><span>${money(bounds.max)}</span></div>
                     <p class="task-rate-current">${comp.workloadRateCurrentLabel} <strong>${money(task.hourlyRate)}</strong></p>
-                  </label>
-                  <label class="task-field task-field-full">
-                    <span>${comp.workloadTaskDescriptionLabel}</span>
-                    <input type="text" value="${escapeHtml(task.description)}" placeholder="${comp.workloadTaskDescriptionPlaceholder}" data-field="description" data-person-index="${personIndex}" data-task-index="${taskIndex}" />
                   </label>
                   <p class="task-total-line">${comp.workloadTaskTotalLabel}: <strong>${money(taskTotal)}</strong></p>
                 </div>
@@ -424,6 +500,42 @@
     saveWorkloadState();
     renderWorkloadPeople();
     renderWorkloadTotals();
+  });
+
+  projectAddTaskBtn.addEventListener("click", () => {
+    serviceInfoState.projectTasks.push(getProjectTaskDefaults());
+    saveServiceInfoState();
+    renderProjectTasks();
+    syncWorkloadTaskSelections();
+    saveWorkloadState();
+    renderWorkloadPeople();
+  });
+
+  projectTasksItems.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const taskId = target.getAttribute("data-project-task-remove");
+    if (!taskId) return;
+    serviceInfoState.projectTasks = (serviceInfoState.projectTasks || []).filter((task) => task.id !== taskId);
+    syncWorkloadTaskSelections();
+    saveServiceInfoState();
+    saveWorkloadState();
+    renderProjectTasks();
+    renderWorkloadPeople();
+  });
+
+  projectTasksItems.addEventListener("input", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const taskId = target.getAttribute("data-project-task-id");
+    const field = target.getAttribute("data-project-task-field");
+    if (!taskId || !field) return;
+    const task = getProjectTaskById(taskId);
+    if (!task) return;
+    if (field === "title" && target instanceof HTMLInputElement) task.title = target.value.trim();
+    if (field === "description" && target instanceof HTMLTextAreaElement) task.description = target.value.trim();
+    saveServiceInfoState();
+    renderWorkloadPeople();
   });
 
   workloadPeople.addEventListener("click", (event) => {
@@ -495,27 +607,24 @@
       updateWorkloadTaskRowOutputs(target, task);
       return;
     }
-    if (field === "description" && target instanceof HTMLInputElement) {
-      task.description = target.value;
-      saveWorkloadState();
-      return;
-    }
   });
 
   workloadPeople.addEventListener("change", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLSelectElement)) return;
     const field = target.getAttribute("data-field");
-    if (field !== "degree") return;
     const personIndex = Number(target.getAttribute("data-person-index"));
     const taskIndex = Number(target.getAttribute("data-task-index"));
     if (!Number.isInteger(personIndex) || personIndex < 0 || personIndex >= workloadState.people.length) return;
     const tasks = workloadState.people[personIndex].tasks;
     if (!Number.isInteger(taskIndex) || taskIndex < 0 || taskIndex >= tasks.length) return;
     const task = tasks[taskIndex];
-    const bounds = getDegreeBounds(target.value);
-    task.degreeKey = bounds.key;
-    task.hourlyRate = clamp(task.hourlyRate, bounds.min, bounds.max);
+    if (field === "degree") {
+      const bounds = getDegreeBounds(target.value);
+      task.degreeKey = bounds.key;
+      task.hourlyRate = clamp(task.hourlyRate, bounds.min, bounds.max);
+    }
+    if (field === "selectedProjectTaskId") task.selectedProjectTaskId = target.value;
     saveWorkloadState();
     renderWorkloadPeople();
     renderWorkloadTotals();
@@ -1024,14 +1133,15 @@
   langEnBtn.addEventListener("click", () => setLanguage("en"));
 
   // ── Service info events ───────────────────────────────────────────────────────
-  for (const input of [offerNumberInput, offerRecipientInput, offerEventInput, offerProviderInput, offerDescriptionInput]) {
+  for (const input of [offerNumberInput, offerRecipientInput, offerEventInput, offerProviderInput, projectDescriptionInput]) {
     input.addEventListener("input", () => {
       serviceInfoState = {
         offerNumber: offerNumberInput.value.trim(),
         recipient:   offerRecipientInput.value.trim(),
         eventName:   offerEventInput.value.trim(),
         provider:    offerProviderInput.value.trim(),
-        description: offerDescriptionInput.value.trim(),
+        projectDescription: projectDescriptionInput.value.trim(),
+        projectTasks: serviceInfoState.projectTasks,
       };
       saveServiceInfoState();
     });
@@ -1056,13 +1166,19 @@
     offerEventInput.placeholder       = tt.offer.eventPlaceholder;
     offerProviderLabel.textContent    = tt.offer.providerLabel;
     offerProviderInput.placeholder    = tt.offer.providerPlaceholder;
-    offerDescriptionLabel.textContent = tt.offer.descriptionLabel;
-    offerDescriptionInput.placeholder = tt.offer.descriptionPlaceholder;
+    projectTitle.textContent          = tt.offer.projectTitle;
+    projectDescriptionLabel.textContent = tt.offer.projectDescriptionLabel;
+    projectDescriptionInput.placeholder = tt.offer.projectDescriptionPlaceholder;
+    projectTasksTitle.textContent     = tt.offer.projectTasksTitle;
+    projectTasksHint.textContent      = tt.offer.projectTasksHint;
+    projectAddTaskBtn.textContent     = tt.offer.projectAddTaskBtn;
+    renderProjectTasks();
 
     workloadTitle.textContent = comp.workloadTitle;
     workloadHint.textContent = comp.workloadHint;
     setTextById("workload-add-person-btn", comp.workloadAddPersonBtn);
     setTextById("workload-total-line-label", comp.workloadSectionTotalLabel);
+    syncWorkloadTaskSelections();
     renderWorkloadPeople();
 
     setTextById("comp-title", comp.title);
@@ -1198,7 +1314,8 @@
       }
       for (const task of person.tasks) {
         const degree = getDegreeLabel(task.degreeKey, comp);
-        const taskName = (task.description || "").trim() || tt.offer.pdfNotProvided;
+        const linkedTask = getProjectTaskById(task.selectedProjectTaskId);
+        const taskName = linkedTask?.title?.trim() || tt.offer.pdfNotProvided;
         const taskTotal = getTaskTotal(task);
         details.push(
           `  - ${comp.pdfWorkloadTaskLabel}: ${taskName} | ${comp.pdfWorkloadDegreeLabel}: ${degree} | ${comp.pdfWorkloadHoursLabel}: ${task.hours} | ${comp.pdfWorkloadRateLabel}: ${money(task.hourlyRate)} | ${comp.pdfWorkloadTaskTotalLabel}: ${money(taskTotal)}`
@@ -1206,6 +1323,18 @@
       }
     }
     return details;
+  }
+
+  function getProjectPdfBlocks() {
+    const tt = t();
+    return {
+      description: (serviceInfoState.projectDescription || "").trim() || tt.offer.pdfNotProvided,
+      tasks: (serviceInfoState.projectTasks || []).map((task) => {
+        const title = (task.title || "").trim() || tt.offer.pdfNotProvided;
+        const description = (task.description || "").trim() || tt.offer.pdfNotProvided;
+        return `${title}: ${description}`;
+      }),
+    };
   }
 
   function getCompensationPdfBlocks() {
@@ -1323,7 +1452,6 @@
       { label: tt.offer.recipientLabel,   value: serviceInfoState.recipient   || tt.offer.pdfNotProvided },
       { label: tt.offer.eventLabel,       value: serviceInfoState.eventName   || tt.offer.pdfNotProvided },
       { label: tt.offer.providerLabel,    value: serviceInfoState.provider    || tt.offer.pdfNotProvided },
-      { label: tt.offer.descriptionLabel, value: serviceInfoState.description || tt.offer.pdfNotProvided },
     ];
 
     y += 6;
@@ -1335,6 +1463,35 @@
       if (y + wrapped.length * 5 > 260) { doc.addPage(); y = 20; }
       doc.text(wrapped, margin, y);
       y += wrapped.length * 5 + 1;
+    }
+
+    const projectPdf = getProjectPdfBlocks();
+    y += 8;
+    if (y > 270) { doc.addPage(); y = 20; }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(18, 84, 90);
+    doc.text(tt.offer.pdfProjectTitle, margin, y);
+
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(30, 27, 22);
+    const projectDescriptionLines = doc.splitTextToSize(`${tt.offer.pdfProjectDescriptionLabel}: ${projectPdf.description}`, contentW);
+    if (y + projectDescriptionLines.length * 5 > 280) { doc.addPage(); y = 20; }
+    doc.text(projectDescriptionLines, margin, y);
+    y += projectDescriptionLines.length * 5 + 2;
+
+    const projectTaskLines = projectPdf.tasks.length ? projectPdf.tasks : [tt.offer.projectTaskEmpty];
+    const projectTasksTitleLines = doc.splitTextToSize(`${tt.offer.pdfProjectTasksLabel}:`, contentW);
+    if (y + projectTasksTitleLines.length * 5 > 280) { doc.addPage(); y = 20; }
+    doc.text(projectTasksTitleLines, margin, y);
+    y += projectTasksTitleLines.length * 5 + 1;
+    for (const item of projectTaskLines) {
+      const wrapped = doc.splitTextToSize(`- ${item}`, contentW);
+      if (y + wrapped.length * 5 > 285) { doc.addPage(); y = 20; }
+      doc.text(wrapped, margin, y);
+      y += wrapped.length * 5 + 2;
     }
 
     // Team workload total box
@@ -1466,6 +1623,7 @@
   updateLanguageButtons();
   applyTranslations();
   syncServiceInfoForm();
+  renderProjectTasks();
   renderWorkloadTotals();
   syncCompensationForm();
   initHelpBubbles();
