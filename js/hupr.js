@@ -1923,6 +1923,26 @@
     doc.text(footnoteLines, margin, y);
     y += footnoteLines.length * 4.2;
 
+    // Clauses
+    y += 6;
+    if (y > 275) { doc.addPage(); y = 20; }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(18, 84, 90);
+    doc.text(tt.offer.pdfClausesTitle || "Clauses", margin, y);
+
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.4);
+    doc.setTextColor(30, 27, 22);
+    const clauses = Array.isArray(tt.offer.pdfClausesList) ? tt.offer.pdfClausesList : [];
+    for (const clause of clauses) {
+      const wrapped = doc.splitTextToSize(`- ${clause}`, contentW);
+      if (y + wrapped.length * 4.6 > 285) { doc.addPage(); y = 20; }
+      doc.text(wrapped, margin, y);
+      y += wrapped.length * 4.6 + 1.2;
+    }
+
     // Signatures
     y += 8;
     if (y > 245) { doc.addPage(); y = 24; }

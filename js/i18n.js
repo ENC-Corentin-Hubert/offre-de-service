@@ -184,6 +184,12 @@ window.translations = {
       pdfBalanceCompSubtotalLabel: "Sous-total compensations et frais",
       pdfBalanceGrandTotalLabel: "Total général",
       pdfBalanceFootnote: "Tout travail ou toute heure supplémentaire non prévu dans cette offre de service sera facturé.",
+      pdfClausesTitle: "Clauses",
+      pdfClausesList: [
+        "La présente offre est valide 30 jours à compter de la date d'envoi.",
+        "Les taxes applicables au Québec sont à ajouter.",
+        "La signature indique que l'offre est lue et approuvée par le client."
+      ],
       pdfItemCol: "Élément",
       pdfAmountCol: "Montant",
       pdfNoDetails: "Aucun détail saisi.",
@@ -569,6 +575,12 @@ window.translations = {
       pdfBalanceCompSubtotalLabel: "Compensation and expenses subtotal",
       pdfBalanceGrandTotalLabel: "Grand total",
       pdfBalanceFootnote: "Any additional work or hours not included in this service offer will be billed.",
+      pdfClausesTitle: "Clauses",
+      pdfClausesList: [
+        "This offer is valid for 30 days from the date sent.",
+        "Applicable Québec taxes are additional.",
+        "Signature confirms that the offer has been read and approved by the client."
+      ],
       pdfItemCol: "Item",
       pdfAmountCol: "Amount",
       pdfNoDetails: "No details provided.",
