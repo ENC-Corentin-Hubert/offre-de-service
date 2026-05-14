@@ -1723,6 +1723,7 @@
 
     const pdfBlocks = getCompensationPdfBlocks();
     const hasCompensations = pdfBlocks.details.length > 0;
+    const hasConditions = pdfBlocks.conditions.length > 0;
     const compTotal = hasCompensations ? getCompensationTotal() : 0;
 
     if (hasCompensations) {
@@ -1821,8 +1822,11 @@
         y += wrapped.length * 5 + 2;
       }
 
-      // Conditions section
-      y += 4;
+    }
+
+    if (hasConditions) {
+      // Conditions section (displayed even if compensation total is 0)
+      y += hasCompensations ? 4 : 7;
       if (y > 280) { doc.addPage(); y = 20; }
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
@@ -1833,8 +1837,7 @@
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       doc.setTextColor(30, 27, 22);
-      const conditionLines = pdfBlocks.conditions.length ? pdfBlocks.conditions : [tt.offer.compensation.pdfNoConditions];
-      for (const item of conditionLines) {
+      for (const item of pdfBlocks.conditions) {
         const wrapped = doc.splitTextToSize(`- ${item}`, contentW);
         if (y + wrapped.length * 5 > 285) { doc.addPage(); y = 20; }
         doc.text(wrapped, margin, y);
