@@ -1311,12 +1311,11 @@
         continue;
       }
       for (const task of person.tasks) {
-        const degree = getDegreeLabel(task.degreeKey, comp);
         const linkedTask = getProjectTaskById(task.selectedProjectTaskId);
         const taskName = linkedTask?.title?.trim() || tt.offer.pdfNotProvided;
         const taskTotal = getTaskTotal(task);
         details.push(
-          `  - ${comp.pdfWorkloadTaskLabel}: ${taskName} | ${comp.pdfWorkloadDegreeLabel}: ${degree} | ${comp.pdfWorkloadHoursLabel}: ${task.hours} | ${comp.pdfWorkloadRateLabel}: ${money(task.hourlyRate)} | ${comp.pdfWorkloadTaskTotalLabel}: ${money(taskTotal)}`
+          `  - ${comp.pdfWorkloadTaskLabel}: ${taskName} | ${comp.pdfWorkloadHoursLabel}: ${task.hours} | ${comp.pdfWorkloadRateLabel}: ${money(task.hourlyRate)} | ${comp.pdfWorkloadTaskTotalLabel}: ${money(taskTotal)}`
         );
       }
     }
@@ -1330,7 +1329,7 @@
       tasks: (serviceInfoState.projectTasks || []).map((task) => {
         const title = (task.title || "").trim() || tt.offer.pdfNotProvided;
         const description = (task.description || "").trim() || tt.offer.pdfNotProvided;
-        return `${title}: ${description}`;
+        return { title, description };
       }),
     };
   }
@@ -1339,6 +1338,14 @@
     const tt         = t();
     const details    = [];
     const conditions = [];
+    const addDetail = (label, amount, description = "") => {
+      const cleanDescription = (description || "").trim();
+      details.push({
+        item: label,
+        description: cleanDescription,
+        amount: Math.max(0, Number(amount) || 0),
+      });
+    };
 
     if (compensationState.resources.applies === "yes") {
       for (const item of compensationState.resources.items || []) {
@@ -1347,42 +1354,44 @@
         const reimbursedLabel    = item.kind === "human" ? tt.offer.compensation.pdfReimbursedHuman        : tt.offer.compensation.pdfReimbursedMaterial;
         if (item.clientProvides === "yes") { conditions.push(appendDescription(clientProvidesLabel, item.details)); continue; }
         if (item.reimbursed     === "yes") { conditions.push(appendDescription(reimbursedLabel, item.details)); continue; }
-        if ((item.amount || 0)  > 0)       { details.push(appendDescription(`${tt.offer.compensation.pdfResourcesLabel} (${typeLabel}): +${money(item.amount)}`, item.details)); continue; }
+        if ((item.amount || 0)  > 0)       { addDetail(`${tt.offer.compensation.pdfResourcesLabel} (${typeLabel})`, item.amount, item.details); continue; }
         if (item.details) conditions.push(appendDescription(`${tt.offer.compensation.pdfResourcesLabel} (${typeLabel}).`, item.details));
       }
     }
 
-    if (compensationState.admin.applies === "yes" && compensationState.admin.amount > 0) details.push(`${tt.offer.compensation.pdfAdminLabel}: +${money(compensationState.admin.amount)}`);
+    if (compensationState.admin.applies === "yes" && compensationState.admin.amount > 0) addDetail(tt.offer.compensation.pdfAdminLabel, compensationState.admin.amount);
 
     const longDesc = compensationState.travel.transport.long.details;
     if (compensationState.travel.transport.long.enabled) {
       if (compensationState.travel.transport.long.clientCovers === "yes") conditions.push(appendDescription(tt.offer.compensation.pdfClientCoversTransportLong, longDesc));
       else if (compensationState.travel.transport.long.reimbursed === "yes") conditions.push(appendDescription(tt.offer.compensation.pdfReimbursedTransportLong, longDesc));
-      else if (compensationState.travel.transport.long.amount > 0) details.push(appendDescription(`${tt.offer.compensation.pdfTransportLongLabel}: +${money(compensationState.travel.transport.long.amount)}`, longDesc));
+      else if (compensationState.travel.transport.long.amount > 0) addDetail(tt.offer.compensation.pdfTransportLongLabel, compensationState.travel.transport.long.amount, longDesc);
       else if (longDesc) conditions.push(appendDescription(`${tt.offer.compensation.pdfTransportLongLabel}.`, longDesc));
     }
 
     const shortDesc = compensationState.travel.transport.short.details;
     if (compensationState.travel.transport.short.enabled) {
       if (compensationState.travel.transport.short.reimbursed === "yes") conditions.push(appendDescription(tt.offer.compensation.pdfReimbursedTransportShort, shortDesc));
-      else if (compensationState.travel.transport.short.amount > 0) details.push(appendDescription(`${tt.offer.compensation.pdfTransportShortLabel}: +${money(compensationState.travel.transport.short.amount)}`, shortDesc));
+      else if (compensationState.travel.transport.short.amount > 0) addDetail(tt.offer.compensation.pdfTransportShortLabel, compensationState.travel.transport.short.amount, shortDesc);
       else if (shortDesc) conditions.push(appendDescription(`${tt.offer.compensation.pdfTransportShortLabel}.`, shortDesc));
     }
 
     const taxiDesc = compensationState.travel.transport.taxi.details;
     if (compensationState.travel.transport.taxi.enabled) {
       if (compensationState.travel.transport.taxi.reimbursed === "yes") conditions.push(appendDescription(tt.offer.compensation.pdfReimbursedTaxi, taxiDesc));
-      else if (compensationState.travel.transport.taxi.amount > 0) details.push(appendDescription(`${tt.offer.compensation.pdfTaxiLabel}: +${money(compensationState.travel.transport.taxi.amount)}`, taxiDesc));
+      else if (compensationState.travel.transport.taxi.amount > 0) addDetail(tt.offer.compensation.pdfTaxiLabel, compensationState.travel.transport.taxi.amount, taxiDesc);
       else if (taxiDesc) conditions.push(appendDescription(`${tt.offer.compensation.pdfTaxiLabel}.`, taxiDesc));
     }
 
-    if (compensationState.travel.transport.car.enabled) details.push(`${tt.offer.compensation.pdfCarLabel}: +${money(compensationState.travel.transport.car.amount)}`);
+    if (compensationState.travel.transport.car.enabled && compensationState.travel.transport.car.amount > 0) {
+      addDetail(tt.offer.compensation.pdfCarLabel, compensationState.travel.transport.car.amount);
+    }
 
     const materialDesc = compensationState.travel.transport.material.details;
     if (compensationState.travel.transport.material.enabled) {
       if (compensationState.travel.transport.material.clientCovers === "yes") conditions.push(appendDescription(tt.offer.compensation.pdfClientCoversTransportMaterial, materialDesc));
       else if (compensationState.travel.transport.material.reimbursed === "yes") conditions.push(appendDescription(tt.offer.compensation.pdfReimbursedTransportMaterial, materialDesc));
-      else if (compensationState.travel.transport.material.amount > 0) details.push(appendDescription(`${tt.offer.compensation.pdfTransportMaterialLabel}: +${money(compensationState.travel.transport.material.amount)}`, materialDesc));
+      else if (compensationState.travel.transport.material.amount > 0) addDetail(tt.offer.compensation.pdfTransportMaterialLabel, compensationState.travel.transport.material.amount, materialDesc);
       else if (materialDesc) conditions.push(appendDescription(`${tt.offer.compensation.pdfTransportMaterialLabel}.`, materialDesc));
     }
 
@@ -1390,7 +1399,7 @@
     if (compensationState.travel.lodging.hasExpenses === "yes") {
       if (compensationState.travel.lodging.clientCovers === "yes") conditions.push(appendDescription(tt.offer.compensation.pdfClientCoversLodging, lodgingDesc));
       else if (compensationState.travel.lodging.reimbursed === "yes") conditions.push(appendDescription(tt.offer.compensation.pdfReimbursedLodging, lodgingDesc));
-      else if (compensationState.travel.lodging.amount > 0) details.push(appendDescription(`${tt.offer.compensation.pdfLodgingLabel}: +${money(compensationState.travel.lodging.amount)}`, lodgingDesc));
+      else if (compensationState.travel.lodging.amount > 0) addDetail(tt.offer.compensation.pdfLodgingLabel, compensationState.travel.lodging.amount, lodgingDesc);
       else if (lodgingDesc) conditions.push(appendDescription(`${tt.offer.compensation.pdfLodgingLabel}.`, lodgingDesc));
     }
 
@@ -1399,7 +1408,7 @@
       const mealsTotal = compensationState.travel.meals.breakfast.qty * compensationState.travel.meals.breakfast.unit
                        + compensationState.travel.meals.lunch.qty     * compensationState.travel.meals.lunch.unit
                        + compensationState.travel.meals.dinner.qty    * compensationState.travel.meals.dinner.unit;
-      if (mealsTotal > 0) details.push(`${tt.offer.compensation.pdfMealsLabel} (${tt.offer.compensation.pdfMealsZoneLabel}: ${mealsZoneLabel}): +${money(mealsTotal)}`);
+      if (mealsTotal > 0) addDetail(`${tt.offer.compensation.pdfMealsLabel} (${tt.offer.compensation.pdfMealsZoneLabel}: ${mealsZoneLabel})`, mealsTotal);
     }
 
     return { details, conditions };
@@ -1424,47 +1433,48 @@
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
     doc.setTextColor(255, 255, 255);
-    doc.text("HUPR - Calculateur de frais / Fee Calculator", margin, 9.5);
+    doc.text(tt.offer.pdfHeaderTitle || "HUPR - Service Offer", margin, 9.5);
 
     // Title
     y = 25;
+    const pdfEventTitle = (serviceInfoState.eventName || "").trim() || tt.offer.pdfNotProvided;
     doc.setTextColor(18, 84, 90);
     doc.setFontSize(17);
-    doc.text(tt.offer.title, margin, y);
+    doc.text(pdfEventTitle, margin, y);
 
-    y += 8;
+    const rightColX = pageW - margin;
+    const rightColW = 86;
+    const rightColTopY = 33;
+    let rightY = rightColTopY;
+
     doc.setTextColor(30, 27, 22);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.text(`Date: ${dateText}`, margin, y);
+    doc.setFontSize(10);
+    doc.text(`Date: ${dateText}`, rightColX, rightY, { align: "right" });
 
-    // Offer info block
-    y += 10;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(18, 84, 90);
-    doc.text(tt.offer.pdfInfoTitle, margin, y);
+    rightY += 5;
 
     const infoRows = [
       { label: tt.offer.offerNumberLabel, value: serviceInfoState.offerNumber || tt.offer.pdfNotProvided },
       { label: tt.offer.recipientLabel,   value: serviceInfoState.recipient   || tt.offer.pdfNotProvided },
-      { label: tt.offer.eventLabel,       value: serviceInfoState.eventName   || tt.offer.pdfNotProvided },
       { label: tt.offer.providerLabel,    value: serviceInfoState.provider    || tt.offer.pdfNotProvided },
     ];
 
-    y += 6;
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
+    doc.setFontSize(9.5);
     doc.setTextColor(30, 27, 22);
     for (const row of infoRows) {
-      const wrapped = doc.splitTextToSize(`${row.label}: ${row.value}`, contentW);
-      if (y + wrapped.length * 5 > 260) { doc.addPage(); y = 20; }
-      doc.text(wrapped, margin, y);
-      y += wrapped.length * 5 + 1;
+      const wrapped = doc.splitTextToSize(`${row.label}: ${row.value}`, rightColW);
+      if (rightY + wrapped.length * 4.2 > 260) { doc.addPage(); rightY = 20; }
+      for (const line of wrapped) {
+        doc.text(line, rightColX, rightY, { align: "right" });
+        rightY += 4.2;
+      }
+      rightY += 0.6;
     }
 
     const projectPdf = getProjectPdfBlocks();
-    y += 8;
+    y = Math.max(y + 8, rightY + 6);
     if (y > 270) { doc.addPage(); y = 20; }
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
@@ -1480,19 +1490,51 @@
     doc.text(projectDescriptionLines, margin, y);
     y += projectDescriptionLines.length * 5 + 2;
 
-    const projectTaskLines = projectPdf.tasks.length ? projectPdf.tasks : [tt.offer.projectTaskEmpty];
+    const projectTaskRows = projectPdf.tasks.length ? projectPdf.tasks : [{ title: tt.offer.projectTaskEmpty, description: "" }];
     const projectTasksTitleLines = doc.splitTextToSize(`${tt.offer.pdfProjectTasksLabel}:`, contentW);
     if (y + projectTasksTitleLines.length * 5 > 280) { doc.addPage(); y = 20; }
     doc.text(projectTasksTitleLines, margin, y);
     y += projectTasksTitleLines.length * 5 + 1;
-    for (const item of projectTaskLines) {
-      const wrapped = doc.splitTextToSize(`- ${item}`, contentW);
-      if (y + wrapped.length * 5 > 285) { doc.addPage(); y = 20; }
-      doc.text(wrapped, margin, y);
-      y += wrapped.length * 5 + 2;
+
+    for (let index = 0; index < projectTaskRows.length; index += 1) {
+      const task = projectTaskRows[index];
+      const cardX = margin;
+      const cardW = contentW;
+      const cardPadX = 2.5;
+      const cardPadY = 2.3;
+      const titleText = `${index + 1}. ${task.title}`;
+      const titleLines = doc.splitTextToSize(titleText, cardW - cardPadX * 2);
+      const descriptionLines = task.description
+        ? doc.splitTextToSize(task.description, cardW - cardPadX * 2)
+        : [];
+      const cardLineH = 4.2;
+      const cardH = (titleLines.length + descriptionLines.length) * cardLineH + cardPadY * 2 + (descriptionLines.length ? 1 : 0);
+
+      if (y + cardH > 285) { doc.addPage(); y = 20; }
+
+      doc.setFillColor(248, 251, 252);
+      doc.setDrawColor(205, 216, 220);
+      doc.roundedRect(cardX, y, cardW, cardH, 1.5, 1.5, "FD");
+
+      let textY = y + cardPadY + 3.2;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(24, 88, 96);
+      doc.text(titleLines, cardX + cardPadX, textY);
+      textY += titleLines.length * cardLineH;
+
+      if (descriptionLines.length) {
+        textY += 1;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.6);
+        doc.setTextColor(30, 27, 22);
+        doc.text(descriptionLines, cardX + cardPadX, textY);
+      }
+
+      y += cardH + 2.2;
     }
 
-    // Team workload total box
+    // Team workload table
     const workloadTotal = getWorkloadTotal();
     y += 7;
     if (y > 270) { doc.addPage(); y = 20; }
@@ -1501,89 +1543,350 @@
     doc.setTextColor(18, 84, 90);
     doc.text(tt.offer.compensation.pdfWorkloadTitle, margin, y);
 
-    y += 7;
-    doc.setFillColor(252, 245, 237);
-    doc.rect(margin, y - 5, contentW, 10, "F");
-    doc.setDrawColor(200, 210, 210);
-    doc.rect(margin, y - 5, contentW, 10);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(160, 98, 26);
-    doc.text(`${tt.offer.compensation.pdfWorkloadSectionTotalLabel}: ${money(workloadTotal)}`, margin + 3, y + 1.5);
+    // Team workload details section (table)
+    const workloadTableRows = [];
+    for (const person of workloadState.people) {
+      const personName = (person.name || "").trim() || tt.offer.pdfNotProvided;
+      if (!person.tasks.length) {
+        workloadTableRows.push({
+          person: personName,
+          task: tt.offer.compensation.workloadNoTask,
+          hours: "-",
+          rate: "-",
+          total: "-",
+        });
+        continue;
+      }
 
-    // Team workload details section
-    const workloadDetails = getWorkloadPdfBlocks();
-    y += 12;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(30, 27, 22);
-    const workloadLines = workloadDetails.length ? workloadDetails : [tt.offer.pdfNoDetails];
-    for (const item of workloadLines) {
-      const wrapped = doc.splitTextToSize(`- ${item}`, contentW);
-      if (y + wrapped.length * 5 > 285) { doc.addPage(); y = 20; }
-      doc.text(wrapped, margin, y);
-      y += wrapped.length * 5 + 2;
+      for (const task of person.tasks) {
+        const linkedTask = getProjectTaskById(task.selectedProjectTaskId);
+        const taskName = linkedTask?.title?.trim() || tt.offer.pdfNotProvided;
+        workloadTableRows.push({
+          person: personName,
+          task: taskName,
+          hours: String(task.hours),
+          rate: money(task.hourlyRate),
+          total: money(getTaskTotal(task)),
+        });
+      }
     }
 
-    // Compensations total box
-    const compTotal = getCompensationTotal();
-    y += 7;
-    if (y > 270) { doc.addPage(); y = 20; }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(18, 84, 90);
-    doc.text(tt.offer.compensation.title, margin, y);
+    y += 12;
+    const tableCols = [34, 52, 16, 28, 40];
+    const tableHeaders = [
+      tt.offer.compensation.pdfWorkloadPersonLabel,
+      tt.offer.compensation.pdfWorkloadTaskLabel,
+      tt.offer.compensation.pdfWorkloadHoursLabel,
+      tt.offer.compensation.pdfWorkloadRateLabel,
+      tt.offer.compensation.pdfWorkloadTaskTotalLabel,
+    ];
+    const tablePadX = 1.4;
+    const tablePadY = 1.2;
+    const tableLineH = 3.8;
 
-    y += 7;
-    doc.setFillColor(252, 245, 237);
-    doc.rect(margin, y - 5, contentW, 10, "F");
-    doc.setDrawColor(200, 210, 210);
-    doc.rect(margin, y - 5, contentW, 10);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(160, 98, 26);
-    doc.text(`${tt.offer.compensation.totalLineLabel}: ${money(compTotal)}`, margin + 3, y + 1.5);
+    function drawWorkloadHeader() {
+      const headerHeight = 8.2;
+      if (y + headerHeight > 285) {
+        doc.addPage();
+        y = 20;
+      }
 
-    // Details section
+      let x = margin;
+      doc.setFillColor(239, 245, 247);
+      doc.setDrawColor(188, 203, 208);
+      doc.rect(margin, y, contentW, headerHeight, "FD");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.2);
+      doc.setTextColor(24, 88, 96);
+      for (let i = 0; i < tableHeaders.length; i += 1) {
+        const lines = doc.splitTextToSize(tableHeaders[i], tableCols[i] - tablePadX * 2);
+        doc.text(lines, x + tablePadX, y + tablePadY + 3);
+        x += tableCols[i];
+      }
+      y += headerHeight;
+    }
+
+    function drawWorkloadRow(row, zebraIndex) {
+      const cells = [row.person, row.task, row.hours, row.rate, row.total];
+      const wrappedCells = cells.map((value, idx) => doc.splitTextToSize(String(value), tableCols[idx] - tablePadX * 2));
+      const maxLines = wrappedCells.reduce((max, lines) => Math.max(max, lines.length), 1);
+      const rowHeight = Math.max(7.5, maxLines * tableLineH + tablePadY * 2);
+
+      if (y + rowHeight > 285) {
+        doc.addPage();
+        y = 20;
+        drawWorkloadHeader();
+      }
+
+      doc.setFillColor(zebraIndex % 2 === 0 ? 255 : 249);
+      doc.setDrawColor(212, 222, 226);
+      doc.rect(margin, y, contentW, rowHeight, "FD");
+
+      let x = margin;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.3);
+      doc.setTextColor(30, 27, 22);
+      for (let i = 0; i < wrappedCells.length; i += 1) {
+        doc.text(wrappedCells[i], x + tablePadX, y + tablePadY + 3);
+        if (i < wrappedCells.length - 1) doc.line(x + tableCols[i], y, x + tableCols[i], y + rowHeight);
+        x += tableCols[i];
+      }
+
+      y += rowHeight;
+    }
+
+    function drawWorkloadTotalRow() {
+      const row = {
+        person: "",
+        task: tt.offer.compensation.pdfWorkloadSectionTotalLabel,
+        hours: "",
+        rate: "",
+        total: money(workloadTotal),
+      };
+      const cells = [row.person, row.task, row.hours, row.rate, row.total];
+      const wrappedCells = cells.map((value, idx) => doc.splitTextToSize(String(value), tableCols[idx] - tablePadX * 2));
+      const maxLines = wrappedCells.reduce((max, lines) => Math.max(max, lines.length), 1);
+      const rowHeight = Math.max(7.8, maxLines * tableLineH + tablePadY * 2);
+
+      if (y + rowHeight > 285) {
+        doc.addPage();
+        y = 20;
+        drawWorkloadHeader();
+      }
+
+      doc.setFillColor(252, 245, 237);
+      doc.setDrawColor(200, 210, 210);
+      doc.rect(margin, y, contentW, rowHeight, "FD");
+
+      let x = margin;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.4);
+      doc.setTextColor(160, 98, 26);
+      for (let i = 0; i < wrappedCells.length; i += 1) {
+        if (i === wrappedCells.length - 1) {
+          doc.text(wrappedCells[i], x + tableCols[i] - tablePadX, y + tablePadY + 3, { align: "right" });
+        } else {
+          doc.text(wrappedCells[i], x + tablePadX, y + tablePadY + 3);
+        }
+        if (i < wrappedCells.length - 1) doc.line(x + tableCols[i], y, x + tableCols[i], y + rowHeight);
+        x += tableCols[i];
+      }
+
+      y += rowHeight;
+    }
+
+    drawWorkloadHeader();
+    if (!workloadTableRows.length) {
+      drawWorkloadRow({ person: tt.offer.pdfNoDetails, task: "", hours: "", rate: "", total: "" }, 0);
+    } else {
+      for (let i = 0; i < workloadTableRows.length; i += 1) {
+        drawWorkloadRow(workloadTableRows[i], i);
+      }
+    }
+    drawWorkloadTotalRow();
+
     const pdfBlocks = getCompensationPdfBlocks();
-    y += 12;
+    const hasCompensations = pdfBlocks.details.length > 0;
+    const compTotal = hasCompensations ? getCompensationTotal() : 0;
+
+    if (hasCompensations) {
+      // Compensations recap table
+      y += 7;
+      if (y > 270) { doc.addPage(); y = 20; }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(18, 84, 90);
+      doc.text(tt.offer.compensation.title, margin, y);
+
+      y += 6;
+      const compTableCols = [122, 38];
+      const compTableHeaders = [tt.offer.pdfItemCol, tt.offer.pdfAmountCol];
+      const compRows = pdfBlocks.details.map((entry) => ({ item: entry.item, amount: money(entry.amount) }));
+      const compPadX = 1.8;
+      const compPadY = 1.3;
+      const compLineH = 4;
+
+      function drawCompHeader() {
+        const headerH = 8;
+        if (y + headerH > 285) {
+          doc.addPage();
+          y = 20;
+        }
+
+        doc.setFillColor(239, 245, 247);
+        doc.setDrawColor(188, 203, 208);
+        doc.rect(margin, y, contentW, headerH, "FD");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9.4);
+        doc.setTextColor(24, 88, 96);
+        doc.text(compTableHeaders[0], margin + compPadX, y + compPadY + 3);
+        doc.text(compTableHeaders[1], margin + compTableCols[0] + compTableCols[1] - compPadX, y + compPadY + 3, { align: "right" });
+        y += headerH;
+      }
+
+      function drawCompRow(row, zebraIndex, isTotal = false) {
+        const itemLines = doc.splitTextToSize(String(row.item), compTableCols[0] - compPadX * 2);
+        const amountLines = doc.splitTextToSize(String(row.amount), compTableCols[1] - compPadX * 2);
+        const maxLines = Math.max(itemLines.length, amountLines.length, 1);
+        const rowH = Math.max(7.4, maxLines * compLineH + compPadY * 2);
+
+        if (y + rowH > 285) {
+          doc.addPage();
+          y = 20;
+          drawCompHeader();
+        }
+
+        if (isTotal) {
+          doc.setFillColor(252, 245, 237);
+          doc.setDrawColor(200, 210, 210);
+        } else {
+          doc.setFillColor(zebraIndex % 2 === 0 ? 255 : 249);
+          doc.setDrawColor(212, 222, 226);
+        }
+        doc.rect(margin, y, contentW, rowH, "FD");
+        doc.line(margin + compTableCols[0], y, margin + compTableCols[0], y + rowH);
+
+        doc.setFont("helvetica", isTotal ? "bold" : "normal");
+        doc.setFontSize(9.4);
+        doc.setTextColor(isTotal ? 160 : 30, isTotal ? 98 : 27, isTotal ? 26 : 22);
+        doc.text(itemLines, margin + compPadX, y + compPadY + 3);
+        doc.text(amountLines, margin + compTableCols[0] + compTableCols[1] - compPadX, y + compPadY + 3, { align: "right" });
+
+        y += rowH;
+      }
+
+      drawCompHeader();
+      for (let i = 0; i < compRows.length; i += 1) {
+        drawCompRow(compRows[i], i, false);
+      }
+      drawCompRow({ item: tt.offer.compensation.totalLineLabel, amount: money(compTotal) }, compRows.length, true);
+
+      // Details section (descriptions only)
+      const descriptionLines = pdfBlocks.details
+        .filter((entry) => entry.description)
+        .map((entry) => `${entry.item}: ${entry.description}`);
+
+      y += 6;
+      if (y > 280) { doc.addPage(); y = 20; }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(18, 84, 90);
+      doc.text(tt.offer.pdfDetailsTitle, margin, y);
+
+      y += 7;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(30, 27, 22);
+      const detailsLines = descriptionLines.length ? descriptionLines : [tt.offer.pdfNoDetails];
+      for (const item of detailsLines) {
+        const wrapped = doc.splitTextToSize(`- ${item}`, contentW);
+        if (y + wrapped.length * 5 > 285) { doc.addPage(); y = 20; }
+        doc.text(wrapped, margin, y);
+        y += wrapped.length * 5 + 2;
+      }
+
+      // Conditions section
+      y += 4;
+      if (y > 280) { doc.addPage(); y = 20; }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(18, 84, 90);
+      doc.text(tt.offer.compensation.pdfConditionsTitle, margin, y);
+
+      y += 7;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(30, 27, 22);
+      const conditionLines = pdfBlocks.conditions.length ? pdfBlocks.conditions : [tt.offer.compensation.pdfNoConditions];
+      for (const item of conditionLines) {
+        const wrapped = doc.splitTextToSize(`- ${item}`, contentW);
+        if (y + wrapped.length * 5 > 285) { doc.addPage(); y = 20; }
+        doc.text(wrapped, margin, y);
+        y += wrapped.length * 5 + 2;
+      }
+    }
+
+    // Balance table (team + compensations)
+    y += 8;
     if (y > 270) { doc.addPage(); y = 20; }
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(18, 84, 90);
-    doc.text(tt.offer.pdfDetailsTitle, margin, y);
+    doc.text(tt.offer.pdfBalanceTitle || "Summary", margin, y);
 
-    y += 7;
+    y += 6;
+    const balanceCols = [122, 38];
+    const balancePadX = 1.8;
+    const balancePadY = 1.3;
+    const balanceLineH = 4;
+    const balanceRows = [
+      { item: tt.offer.pdfBalanceTeamSubtotalLabel || tt.offer.compensation.pdfWorkloadSectionTotalLabel, amount: money(workloadTotal), isTotal: false },
+      { item: tt.offer.pdfBalanceCompSubtotalLabel || tt.offer.compensation.totalLineLabel, amount: money(compTotal), isTotal: false },
+      { item: tt.offer.pdfBalanceGrandTotalLabel || tt.offer.finalTotalLabel, amount: money(workloadTotal + compTotal), isTotal: true },
+    ];
+
+    const drawBalanceHeader = () => {
+      const headerH = 8;
+      if (y + headerH > 285) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFillColor(239, 245, 247);
+      doc.setDrawColor(188, 203, 208);
+      doc.rect(margin, y, contentW, headerH, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.4);
+      doc.setTextColor(24, 88, 96);
+      doc.text(tt.offer.pdfItemCol, margin + balancePadX, y + balancePadY + 3);
+      doc.text(tt.offer.pdfAmountCol, margin + balanceCols[0] + balanceCols[1] - balancePadX, y + balancePadY + 3, { align: "right" });
+      y += headerH;
+    };
+
+    const drawBalanceRow = (row, index) => {
+      const itemLines = doc.splitTextToSize(String(row.item), balanceCols[0] - balancePadX * 2);
+      const amountLines = doc.splitTextToSize(String(row.amount), balanceCols[1] - balancePadX * 2);
+      const maxLines = Math.max(itemLines.length, amountLines.length, 1);
+      const rowH = Math.max(7.4, maxLines * balanceLineH + balancePadY * 2);
+
+      if (y + rowH > 285) {
+        doc.addPage();
+        y = 20;
+        drawBalanceHeader();
+      }
+
+      if (row.isTotal) {
+        doc.setFillColor(252, 245, 237);
+        doc.setDrawColor(200, 210, 210);
+      } else {
+        doc.setFillColor(index % 2 === 0 ? 255 : 249);
+        doc.setDrawColor(212, 222, 226);
+      }
+      doc.rect(margin, y, contentW, rowH, "FD");
+      doc.line(margin + balanceCols[0], y, margin + balanceCols[0], y + rowH);
+
+      doc.setFont("helvetica", row.isTotal ? "bold" : "normal");
+      doc.setFontSize(9.4);
+      doc.setTextColor(row.isTotal ? 160 : 30, row.isTotal ? 98 : 27, row.isTotal ? 26 : 22);
+      doc.text(itemLines, margin + balancePadX, y + balancePadY + 3);
+      doc.text(amountLines, margin + balanceCols[0] + balanceCols[1] - balancePadX, y + balancePadY + 3, { align: "right" });
+
+      y += rowH;
+    };
+
+    drawBalanceHeader();
+    for (let i = 0; i < balanceRows.length; i += 1) drawBalanceRow(balanceRows[i], i);
+
+    y += 3;
+    const balanceFootnote = tt.offer.pdfBalanceFootnote
+      || "Tout travail ou toute heure supplementaire non prevu dans cette offre de service sera facture.";
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(30, 27, 22);
-    const detailLines = pdfBlocks.details.length ? pdfBlocks.details : [tt.offer.pdfNoDetails];
-    for (const item of detailLines) {
-      const wrapped = doc.splitTextToSize(`- ${item}`, contentW);
-      if (y + wrapped.length * 5 > 285) { doc.addPage(); y = 20; }
-      doc.text(wrapped, margin, y);
-      y += wrapped.length * 5 + 2;
-    }
-
-    // Conditions section
-    y += 4;
-    if (y > 280) { doc.addPage(); y = 20; }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(18, 84, 90);
-    doc.text(tt.offer.compensation.pdfConditionsTitle, margin, y);
-
-    y += 7;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(30, 27, 22);
-    const conditionLines = pdfBlocks.conditions.length ? pdfBlocks.conditions : [tt.offer.compensation.pdfNoConditions];
-    for (const item of conditionLines) {
-      const wrapped = doc.splitTextToSize(`- ${item}`, contentW);
-      if (y + wrapped.length * 5 > 285) { doc.addPage(); y = 20; }
-      doc.text(wrapped, margin, y);
-      y += wrapped.length * 5 + 2;
-    }
+    doc.setFontSize(8.6);
+    doc.setTextColor(120, 120, 120);
+    const footnoteLines = doc.splitTextToSize(balanceFootnote, contentW);
+    if (y + footnoteLines.length * 4.2 > 285) { doc.addPage(); y = 20; }
+    doc.text(footnoteLines, margin, y);
+    y += footnoteLines.length * 4.2;
 
     // Signatures
     y += 8;
