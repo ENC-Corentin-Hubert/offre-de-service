@@ -411,6 +411,30 @@
     slider.style.setProperty("--slider-pct", `${Math.max(0, Math.min(100, pct))}%`);
   }
 
+  function applyTaskRateVisualState(taskRow, task, bounds) {
+    if (!(taskRow instanceof HTMLElement)) return;
+    const slider = taskRow.querySelector('input[data-field="hourlyRate"].fee-slider');
+    const manualInput = taskRow.querySelector('input[data-field="hourlyRateManual"].task-rate-manual');
+    const isOutOfRange = task.hourlyRate < bounds.min || task.hourlyRate > bounds.max;
+    const clampedValue = clamp(task.hourlyRate, bounds.min, bounds.max);
+
+    if (slider instanceof HTMLInputElement) {
+      slider.min = String(bounds.min);
+      slider.max = String(bounds.max);
+      slider.value = String(clampedValue);
+      slider.classList.toggle("is-out-of-range", isOutOfRange);
+      updateSliderFill(slider);
+    }
+
+    if (manualInput instanceof HTMLInputElement) {
+      manualInput.value = String(task.hourlyRate);
+      manualInput.classList.toggle("is-out-of-range", isOutOfRange);
+    }
+
+    const currentRate = taskRow.querySelector(".task-rate-current");
+    if (currentRate instanceof HTMLElement) currentRate.classList.toggle("is-out-of-range", isOutOfRange);
+  }
+
   function renderWorkloadPeople() {
     const comp = t().offer.compensation;
     const projectTasks = serviceInfoState.projectTasks || [];
@@ -418,6 +442,8 @@
       const tasksMarkup = person.tasks.length
         ? person.tasks.map((task, taskIndex) => {
             const bounds = getDegreeBounds(task.degreeKey);
+            const sliderRateValue = clamp(task.hourlyRate, bounds.min, bounds.max);
+            const isRateOutOfRange = task.hourlyRate < bounds.min || task.hourlyRate > bounds.max;
             const taskTotal = getTaskTotal(task);
             const taskOptions = projectTasks.length
               ? [`<option value="">${comp.workloadTaskSelectPlaceholder}</option>`].concat(projectTasks.map((projectTask) => {
@@ -453,9 +479,12 @@
                   </div>
                   <label class="task-field task-field-full">
                     <span>${comp.workloadRateLabel}</span>
-                    <input class="fee-slider" type="range" min="${bounds.min}" max="${bounds.max}" step="1" value="${task.hourlyRate}" data-field="hourlyRate" data-person-index="${personIndex}" data-task-index="${taskIndex}" />
+                    <div class="task-rate-controls">
+                      <input class="fee-slider ${isRateOutOfRange ? "is-out-of-range" : ""}" type="range" min="${bounds.min}" max="${bounds.max}" step="1" value="${sliderRateValue}" data-field="hourlyRate" data-person-index="${personIndex}" data-task-index="${taskIndex}" />
+                      <input class="task-rate-manual ${isRateOutOfRange ? "is-out-of-range" : ""}" type="number" min="0" step="1" value="${task.hourlyRate}" aria-label="${escapeHtml(comp.workloadRateManualLabel)}" title="${escapeHtml(comp.workloadRateManualLabel)}" data-field="hourlyRateManual" data-person-index="${personIndex}" data-task-index="${taskIndex}" />
+                    </div>
                     <div class="task-rate-range"><span>${money(bounds.min)}</span><span>${money(bounds.max)}</span></div>
-                    <p class="task-rate-current">${comp.workloadRateCurrentLabel} <strong>${money(task.hourlyRate)}</strong></p>
+                    <p class="task-rate-current ${isRateOutOfRange ? "is-out-of-range" : ""}">${comp.workloadRateCurrentLabel} <strong>${money(task.hourlyRate)}</strong></p>
                   </label>
                   <p class="task-total-line">${comp.workloadTaskTotalLabel}: <strong>${money(taskTotal)}</strong></p>
                 </div>
@@ -479,18 +508,25 @@
       `;
     }).join("");
 
-    for (const slider of workloadPeople.querySelectorAll('input[type="range"].fee-slider')) {
-      updateSliderFill(slider);
+    for (const taskRow of workloadPeople.querySelectorAll(".task-item")) {
+      if (!(taskRow instanceof HTMLElement)) continue;
+      const personIndex = Number(taskRow.getAttribute("data-person-index"));
+      const taskIndex = Number(taskRow.getAttribute("data-task-index"));
+      const person = workloadState.people[personIndex];
+      const task = person?.tasks?.[taskIndex];
+      if (!task) continue;
+      applyTaskRateVisualState(taskRow, task, getDegreeBounds(task.degreeKey));
     }
   }
 
-  function updateWorkloadTaskRowOutputs(target, task) {
+  function updateWorkloadTaskRowOutputs(target, task, bounds = getDegreeBounds(task.degreeKey)) {
     const taskRow = target.closest(".task-item");
     if (!(taskRow instanceof HTMLElement)) return;
     const rateStrong = taskRow.querySelector(".task-rate-current strong");
     if (rateStrong) rateStrong.textContent = money(task.hourlyRate);
     const totalStrong = taskRow.querySelector(".task-total-line strong");
     if (totalStrong) totalStrong.textContent = money(getTaskTotal(task));
+    applyTaskRateVisualState(taskRow, task, bounds);
   }
 
   workloadAddPersonBtn.addEventListener("click", () => {
@@ -594,15 +630,15 @@
       task.hours = Math.max(0, Math.round(Number(target.value) || 0));
       saveWorkloadState();
       renderWorkloadTotals();
-      updateWorkloadTaskRowOutputs(target, task);
+      updateWorkloadTaskRowOutputs(target, task, getDegreeBounds(task.degreeKey));
       return;
     }
-    if (field === "hourlyRate" && target instanceof HTMLInputElement) {
+    if ((field === "hourlyRate" || field === "hourlyRateManual") && target instanceof HTMLInputElement) {
       task.hourlyRate = Math.max(0, Math.round(Number(target.value) || 0));
-      updateSliderFill(target);
+      const bounds = getDegreeBounds(task.degreeKey);
       saveWorkloadState();
       renderWorkloadTotals();
-      updateWorkloadTaskRowOutputs(target, task);
+      updateWorkloadTaskRowOutputs(target, task, bounds);
       return;
     }
   });
@@ -620,7 +656,6 @@
     if (field === "degree") {
       const bounds = getDegreeBounds(target.value);
       task.degreeKey = bounds.key;
-      task.hourlyRate = clamp(task.hourlyRate, bounds.min, bounds.max);
     }
     if (field === "selectedProjectTaskId") task.selectedProjectTaskId = target.value;
     saveWorkloadState();

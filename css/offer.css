@@ -11,6 +11,9 @@
 .fee-slider {
   -webkit-appearance: none;
   appearance: none;
+  --slider-active-color: var(--accent);
+  --slider-rest-color: rgba(31, 111, 120, 0.22);
+  --slider-thumb-color: var(--accent-strong);
   width: 100%;
   height: 6px;
   border-radius: 3px;
@@ -26,10 +29,10 @@
   border-radius: 3px;
   background: linear-gradient(
     to right,
-    var(--accent) 0%,
-    var(--accent) var(--slider-pct, 50%),
-    rgba(31, 111, 120, 0.22) var(--slider-pct, 50%),
-    rgba(31, 111, 120, 0.22) 100%
+    var(--slider-active-color) 0%,
+    var(--slider-active-color) var(--slider-pct, 50%),
+    var(--slider-rest-color) var(--slider-pct, 50%),
+    var(--slider-rest-color) 100%
   );
 }
 
@@ -40,7 +43,7 @@
   height: 22px;
   margin-top: -8px;
   border-radius: 50%;
-  background: var(--accent-strong);
+  background: var(--slider-thumb-color);
   border: 3px solid #fff;
   box-shadow: 0 2px 8px rgba(18, 84, 90, 0.4);
   cursor: grab;
@@ -57,7 +60,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--accent-strong);
+  background: var(--slider-thumb-color);
   border: 3px solid #fff;
   box-shadow: 0 2px 8px rgba(18, 84, 90, 0.4);
   cursor: grab;
@@ -67,6 +70,12 @@
   outline: 2px solid var(--accent);
   outline-offset: 4px;
   border-radius: 3px;
+}
+
+.fee-slider.is-out-of-range {
+  --slider-active-color: #c66a18;
+  --slider-rest-color: rgba(198, 106, 24, 0.26);
+  --slider-thumb-color: #b85f13;
 }
 
 .slider-bounds {
@@ -514,6 +523,29 @@
   grid-column: 1 / -1;
 }
 
+.task-rate-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.task-rate-controls .fee-slider {
+  flex: 1 1 auto;
+  margin-bottom: 0;
+}
+
+.task-rate-manual {
+  width: 7.4rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.task-rate-manual.is-out-of-range {
+  border-color: rgba(198, 106, 24, 0.58);
+  background: rgba(198, 106, 24, 0.08);
+  color: #9a5314;
+}
+
 .task-rate-range {
   display: flex;
   justify-content: space-between;
@@ -525,6 +557,11 @@
   margin: 0;
   font-weight: 700;
   color: var(--accent-strong);
+}
+
+.task-rate-current.is-out-of-range,
+.task-rate-current.is-out-of-range strong {
+  color: #9a5314;
 }
 
 .task-rate-current strong,
@@ -546,6 +583,15 @@
 @media (max-width: 760px) {
   .task-grid {
     grid-template-columns: 1fr;
+  }
+
+  .task-rate-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .task-rate-manual {
+    width: 100%;
   }
 }
 
